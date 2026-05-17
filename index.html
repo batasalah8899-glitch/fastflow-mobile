@@ -380,10 +380,8 @@ async function doLogin() {
   btn.disabled = true;
   errEl.style.display = 'none';
 
-  const data = await apiCall('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ username, password })
-  });
+  const _r = await fetch(API + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+  const data = await _r.json();
 
   if (data.success) {
     TOKEN = data.data.token;
