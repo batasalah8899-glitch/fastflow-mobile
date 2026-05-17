@@ -358,7 +358,7 @@ async function apiCall(endpoint, options = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
   try {
-    const res = await fetch(`${API}${endpoint}`, { method: options.method || "GET", headers, body: options.body || undefined });
+    const res = await fetch(`${API}${endpoint}`, { method: options.method || "GET", headers, body: options.body ? options.body : undefined });
     return res.json();
   } catch(e) {
     return { success: false, error: e.message };
