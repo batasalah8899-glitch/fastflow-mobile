@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FastFlow ERP</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { font-family:'Cairo',sans-serif; background:#070b18; color:white; direction:rtl; overflow-x:hidden; }
+
+/* ══════════════════════════ */
+/* LOGIN */
+/* ══════════════════════════ */
+#login-screen {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  padding:20px; background:linear-gradient(135deg,#070b18,#0f1629);
+}
+.login-card {
+  background:#0f1629; border:1px solid #1e2d4a; border-radius:24px;
+  padding:32px 24px; width:100%; max-width:380px;
+}
+.login-logo { text-align:center; margin-bottom:28px; }
+.login-logo-icon { width:64px; height:64px; background:linear-gradient(135deg,#f0b429,#3b82f6); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 12px; }
+.login-title { font-size:24px; font-weight:900; color:#f0b429; }
+.login-sub { font-size:12px; color:#64748b; margin-top:4px; }
+.form-group { margin-bottom:14px; }
+.form-label { font-size:12px; color:#94a3b8; display:block; margin-bottom:6px; }
+.form-input {
+  width:100%; background:#0d1425; border:1.5px solid #1e2d4a; border-radius:10px;
+  padding:13px 14px; color:white; font-family:'Cairo',sans-serif; font-size:14px;
+  outline:none; transition:border-color 0.2s;
+}
+.form-input:focus { border-color:#f0b429; }
+.btn-login {
+  width:100%; background:linear-gradient(135deg,#f0b429,#e09b1a);
+  border:none; border-radius:10px; padding:14px; color:#000;
+  font-family:'Cairo',sans-serif; font-size:16px; font-weight:700;
+  cursor:pointer; margin-top:8px; transition:opacity 0.2s;
+}
+.btn-login:active { opacity:0.8; }
+.error-msg { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:10px 14px; color:#ef4444; font-size:12px; margin-bottom:12px; display:none; }
+
+/* ══════════════════════════ */
+/* MAIN APP */
+/* ══════════════════════════ */
+#app-screen { display:none; flex-direction:column; min-height:100vh; }
+
+/* TOP BAR */
+.topbar {
+  background:#0f1629; border-bottom:1px solid #1e2d4a;
+  padding:12px 16px; display:flex; align-items:center; gap:12px;
+  position:sticky; top:0; z-index:100;
+}
+.topbar-logo { width:32px; height:32px; background:linear-gradient(135deg,#f0b429,#3b82f6); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.topbar-title { flex:1; font-size:16px; font-weight:700; }
+.topbar-user { font-size:11px; color:#64748b; text-align:left; }
+.topbar-notif { width:32px; height:32px; background:#0d1425; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; }
+
+/* CONTENT */
+.content { flex:1; padding:16px; overflow-y:auto; padding-bottom:80px; }
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#0f1629; border-top:1px solid #1e2d4a;
+  display:flex; z-index:100; padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  padding:10px 4px; cursor:pointer; transition:all 0.2s;
+  font-size:10px; color:#64748b; gap:4px;
+}
+.nav-item.active { color:#f0b429; }
+.nav-item .nav-icon { font-size:20px; }
+
+/* MORE MENU */
+.more-menu {
+  position:fixed; bottom:70px; left:0; right:0;
+  background:#0f1629; border-top:1px solid #1e2d4a;
+  display:none; grid-template-columns:repeat(4,1fr); gap:1px;
+  background:linear-gradient(to top, #0f1629, #0d1425);
+  z-index:99; padding:12px;
+}
+.more-menu.show { display:grid; }
+.more-item {
+  display:flex; flex-direction:column; align-items:center;
+  padding:12px 8px; cursor:pointer; border-radius:10px;
+  font-size:11px; color:#94a3b8; gap:6px;
+}
+.more-item:active { background:rgba(240,180,41,0.1); }
+.more-item .more-icon { font-size:24px; }
+
+/* ══════════════════════════ */
+/* CARDS */
+/* ══════════════════════════ */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.stat-card { background:#0f1629; border:1px solid #1e2d4a; border-radius:14px; padding:16px; }
+.stat-icon { font-size:24px; margin-bottom:8px; }
+.stat-value { font-size:18px; font-weight:900; margin-bottom:2px; }
+.stat-label { font-size:11px; color:#64748b; }
+
+.section-title { font-size:15px; font-weight:700; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+.section-more { font-size:11px; color:#f0b429; cursor:pointer; }
+
+.list-card { background:#0f1629; border:1px solid #1e2d4a; border-radius:14px; overflow:hidden; margin-bottom:16px; }
+.list-item { padding:14px 16px; border-bottom:1px solid rgba(30,45,74,0.5); display:flex; align-items:center; gap:12px; }
+.list-item:last-child { border-bottom:none; }
+.list-item:active { background:rgba(255,255,255,0.03); }
+.list-avatar { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.list-info { flex:1; }
+.list-name { font-size:13px; font-weight:600; margin-bottom:2px; }
+.list-sub { font-size:11px; color:#64748b; }
+.list-amount { font-size:14px; font-weight:700; color:#f0b429; text-align:left; }
+
+.badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; }
+.badge-green { background:rgba(16,185,129,0.15); color:#10b981; }
+.badge-blue { background:rgba(59,130,246,0.15); color:#60a5fa; }
+.badge-red { background:rgba(239,68,68,0.15); color:#ef4444; }
+.badge-gold { background:rgba(240,180,41,0.15); color:#f0b429; }
+
+/* FORM MODAL */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200; display:none; align-items:flex-end; }
+.modal.show { display:flex; }
+.modal-content { background:#0f1629; border-radius:20px 20px 0 0; padding:20px; width:100%; max-height:85vh; overflow-y:auto; }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.modal-title { font-size:16px; font-weight:700; }
+.modal-close { font-size:20px; cursor:pointer; color:#64748b; background:#0d1425; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+
+/* BUTTONS */
+.btn-fab { position:fixed; bottom:80px; left:16px; width:52px; height:52px; background:linear-gradient(135deg,#f0b429,#e09b1a); border:none; border-radius:16px; font-size:24px; cursor:pointer; z-index:99; box-shadow:0 4px 16px rgba(240,180,41,0.4); display:flex; align-items:center; justify-content:center; }
+.btn-primary { background:linear-gradient(135deg,#f0b429,#e09b1a); border:none; border-radius:10px; padding:13px 20px; color:#000; font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; cursor:pointer; width:100%; }
+.btn-secondary { background:#0d1425; border:1px solid #1e2d4a; border-radius:10px; padding:13px 20px; color:#94a3b8; font-family:'Cairo',sans-serif; font-size:14px; cursor:pointer; width:100%; }
+
+/* PAGE HEADER */
+.page-header { margin-bottom:20px; }
+.page-title { font-size:20px; font-weight:900; margin-bottom:4px; }
+.page-sub { font-size:12px; color:#64748b; }
+
+/* EMPTY STATE */
+.empty-state { text-align:center; padding:40px 20px; color:#64748b; }
+.empty-icon { font-size:48px; margin-bottom:12px; }
+.empty-title { font-size:16px; font-weight:700; color:#94a3b8; margin-bottom:6px; }
+.empty-desc { font-size:12px; line-height:1.7; }
+
+/* LOADING */
+.loading { text-align:center; padding:40px; color:#64748b; font-size:13px; }
+
+/* QUICK ACTIONS */
+.quick-actions { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+.quick-action { background:#0f1629; border:1px solid #1e2d4a; border-radius:14px; padding:14px 8px; text-align:center; cursor:pointer; }
+.quick-action:active { background:rgba(240,180,41,0.1); border-color:#f0b429; }
+.quick-action-icon { font-size:22px; margin-bottom:6px; }
+.quick-action-label { font-size:10px; color:#94a3b8; }
+
+/* INVOICE FORM */
+.invoice-item-row { background:#0d1425; border-radius:10px; padding:12px; margin-bottom:8px; }
+.invoice-item-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+.totals-box { background:#0d1425; border-radius:12px; padding:14px; margin:12px 0; }
+.total-row { display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid rgba(30,45,74,0.5); }
+.total-row:last-child { border-bottom:none; font-weight:700; font-size:15px; color:#f0b429; }
+
+/* ALERT */
+.alert { background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:12px 14px; font-size:12px; color:#10b981; margin-bottom:14px; display:none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════ -->
+<!-- LOGIN SCREEN -->
+<!-- ══════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">⚡</div>
+      <div class="login-title">FastFlow ERP</div>
+      <div class="login-sub">نظام المحاسبة السحابي المتكامل</div>
+    </div>
+    <div class="error-msg" id="login-error"></div>
+    <div class="alert" id="login-success">✅ تم تسجيل الدخول بنجاح!</div>
+    <div class="form-group">
+      <label class="form-label">اسم المستخدم</label>
+      <input class="form-input" id="inp-username" type="text" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">كلمة المرور</label>
+      <input class="form-input" id="inp-password" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-login" id="btn-login" onclick="doLogin()">تسجيل الدخول</button>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#64748b">FastFlow ERP v2.0 | المملكة العربية السعودية</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<!-- APP SCREEN -->
+<!-- ══════════════════════════ -->
+<div id="app-screen">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-logo">⚡</div>
+    <div class="topbar-title" id="page-title-bar">لوحة التحكم</div>
+    <div class="topbar-notif" onclick="showNotif()">🔔</div>
+    <div class="topbar-user" id="user-display"></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="main-content">
+    <!-- Dynamic content here -->
+  </div>
+
+  <!-- FAB -->
+  <button class="btn-fab" id="fab-btn" onclick="showFAB()">＋</button>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span>
+      <span>الرئيسية</span>
+    </div>
+    <div class="nav-item" id="nav-invoices" onclick="showPage('invoices')">
+      <span class="nav-icon">🧾</span>
+      <span>الفواتير</span>
+    </div>
+    <div class="nav-item" id="nav-customers" onclick="showPage('customers')">
+      <span class="nav-icon">👥</span>
+      <span>العملاء</span>
+    </div>
+    <div class="nav-item" id="nav-reports" onclick="showPage('reports')">
+      <span class="nav-icon">📈</span>
+      <span>التقارير</span>
+    </div>
+    <div class="nav-item" id="nav-more" onclick="toggleMore()">
+      <span class="nav-icon">⋯</span>
+      <span>المزيد</span>
+    </div>
+  </div>
+
+  <!-- MORE MENU -->
+  <div class="more-menu" id="more-menu">
+    <div class="more-item" onclick="showPage('accounts');toggleMore()"><span class="more-icon">🌳</span><span>الحسابات</span></div>
+    <div class="more-item" onclick="showPage('journal');toggleMore()"><span class="more-icon">📒</span><span>القيود</span></div>
+    <div class="more-item" onclick="showPage('expenses');toggleMore()"><span class="more-icon">💸</span><span>المصروفات</span></div>
+    <div class="more-item" onclick="showPage('employees');toggleMore()"><span class="more-icon">👤</span><span>الموظفون</span></div>
+    <div class="more-item" onclick="showPage('products');toggleMore()"><span class="more-icon">📦</span><span>المنتجات</span></div>
+    <div class="more-item" onclick="showPage('vat');toggleMore()"><span class="more-icon">🧮</span><span>الضريبة</span></div>
+    <div class="more-item" onclick="showPage('settings');toggleMore()"><span class="more-icon">⚙️</span><span>الإعدادات</span></div>
+    <div class="more-item" onclick="doLogout()"><span class="more-icon">🚪</span><span style="color:#ef4444">خروج</span></div>
+  </div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="modal" id="invoice-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">🧾 فاتورة جديدة</div>
+      <div class="modal-close" onclick="closeModal('invoice-modal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">اسم العميل</label>
+      <input class="form-input" id="inv-client" type="text" placeholder="شركة الأمل">
+    </div>
+    <div class="form-group">
+      <label class="form-label">الرقم الضريبي (اختياري)</label>
+      <input class="form-input" id="inv-vat" type="text" placeholder="310012345600003">
+    </div>
+    <div id="inv-items">
+      <div class="invoice-item-row">
+        <input class="form-input" placeholder="اسم المنتج / الخدمة" id="item-name-0" style="margin-bottom:8px">
+        <div class="invoice-item-inputs">
+          <input class="form-input" type="number" placeholder="الكمية" id="item-qty-0" value="1" oninput="calcTotal()">
+          <input class="form-input" type="number" placeholder="السعر" id="item-price-0" value="0" oninput="calcTotal()">
+        </div>
+      </div>
+    </div>
+    <button onclick="addItem()" style="background:#0d1425;border:1px solid #1e2d4a;border-radius:8px;padding:10px;color:#94a3b8;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;width:100%;margin-bottom:12px">+ إضافة بند</button>
+    <div class="totals-box">
+      <div class="total-row"><span>قبل الضريبة</span><span id="subtotal-display">0.00 ر.س</span></div>
+      <div class="total-row" style="color:#f0b429"><span>ضريبة 15%</span><span id="vat-display">0.00 ر.س</span></div>
+      <div class="total-row"><span>الإجمالي</span><span id="total-display">0.00 ر.س</span></div>
+    </div>
+    <button class="btn-primary" onclick="saveInvoice()" style="margin-bottom:10px">✅ إصدار الفاتورة</button>
+    <button class="btn-secondary" onclick="closeModal('invoice-modal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- CUSTOMER MODAL -->
+<div class="modal" id="customer-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">👥 عميل جديد</div>
+      <div class="modal-close" onclick="closeModal('customer-modal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الاسم</label>
+      <input class="form-input" id="cust-name" type="text" placeholder="شركة الأمل">
+    </div>
+    <div class="form-group">
+      <label class="form-label">الهاتف</label>
+      <input class="form-input" id="cust-phone" type="tel" placeholder="0501234567">
+    </div>
+    <div class="form-group">
+      <label class="form-label">البريد الإلكتروني</label>
+      <input class="form-input" id="cust-email" type="email" placeholder="info@company.sa">
+    </div>
+    <div class="form-group">
+      <label class="form-label">الرقم الضريبي</label>
+      <input class="form-input" id="cust-vat" type="text" placeholder="310012345600003">
+    </div>
+    <button class="btn-primary" onclick="saveCustomer()" style="margin-bottom:10px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('customer-modal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- EXPENSE MODAL -->
+<div class="modal" id="expense-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">💸 مصروف جديد</div>
+      <div class="modal-close" onclick="closeModal('expense-modal')">✕</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">العنوان</label>
+      <input class="form-input" id="exp-title" type="text" placeholder="إيجار المكتب">
+    </div>
+    <div class="form-group">
+      <label class="form-label">المبلغ</label>
+      <input class="form-input" id="exp-amount" type="number" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">الفئة</label>
+      <select class="form-input" id="exp-cat">
+        <option value="RENT">إيجار</option>
+        <option value="UTILITIES">مرافق</option>
+        <option value="SALARIES">رواتب</option>
+        <option value="MARKETING">تسويق</option>
+        <option value="MAINTENANCE">صيانة</option>
+        <option value="OTHER">أخرى</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveExpense()" style="margin-bottom:10px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('expense-modal')">إلغاء</button>
+  </div>
+</div>
+
+<script>
+const API = 'https://fastflow-backend-production.up.railway.app/api/v1';
+let TOKEN = localStorage.getItem('ff_token');
+let USER = JSON.parse(localStorage.getItem('ff_user') || 'null');
+let currentPage = 'dashboard';
+let itemCount = 1;
+let invoicesData = [];
+let customersData = [];
+let expensesData = [];
+let accountsData = [];
+
+async function apiCall(endpoint, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
+  try {
+    const res = await fetch(`${API}${endpoint}`, { method: options.method || "GET", headers, body: options.body || undefined });
+    return res.json();
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
+// ══════════════════
+// AUTH
+// ══════════════════
+async function doLogin() {
+  const username = document.getElementById('inp-username').value;
+  const password = document.getElementById('inp-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('btn-login');
+
+  if (!username || !password) { showError('يرجى إدخال بيانات الدخول'); return; }
+
+  btn.textContent = '⏳ جاري الدخول...';
+  btn.disabled = true;
+  errEl.style.display = 'none';
+
+  const data = await apiCall('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password })
+  });
+
+  if (data.success) {
+    TOKEN = data.data.token;
+    USER = data.data.user;
+    localStorage.setItem('ff_token', TOKEN);
+    localStorage.setItem('ff_user', JSON.stringify(USER));
+    document.getElementById('login-success').style.display = 'block';
+    setTimeout(showApp, 800);
+  } else {
+    showError(data.error || 'بيانات خاطئة');
+    btn.textContent = 'تسجيل الدخول';
+    btn.disabled = false;
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogout() {
+  localStorage.removeItem('ff_token');
+  localStorage.removeItem('ff_user');
+  TOKEN = null; USER = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  toggleMore();
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  document.getElementById('user-display').textContent = USER?.username || '';
+  showPage('dashboard');
+}
+
+// Check if already logged in
+if (TOKEN && USER) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  document.getElementById('user-display').textContent = USER?.username || '';
+  showPage('dashboard');
+}
+
+document.getElementById('inp-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ══════════════════
+// NAVIGATION
+// ══════════════════
+const pageTitles = {
+  dashboard: 'لوحة التحكم', invoices: 'الفواتير', customers: 'العملاء',
+  reports: 'التقارير', accounts: 'شجرة الحسابات', journal: 'القيود اليومية',
+  expenses: 'المصروفات', employees: 'الموظفون', products: 'المنتجات',
+  vat: 'تقرير الضريبة', settings: 'الإعدادات'
+};
+
+function showPage(page) {
+  currentPage = page;
+  document.getElementById('page-title-bar').textContent = pageTitles[page] || page;
+
+  // Update nav
+  ['dashboard','invoices','customers','reports','more'].forEach(id => {
+    document.getElementById('nav-' + id)?.classList.remove('active');
+  });
+  if (['dashboard','invoices','customers','reports'].includes(page)) {
+    document.getElementById('nav-' + page)?.classList.add('active');
+  }
+
+  // Render page
+  const content = document.getElementById('main-content');
+  content.innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
+
+  const fabPages = { invoices: true, customers: true, expenses: true };
+  document.getElementById('fab-btn').style.display = fabPages[page] ? 'flex' : 'none';
+
+  if (page === 'dashboard') renderDashboard();
+  else if (page === 'invoices') renderInvoices();
+  else if (page === 'customers') renderCustomers();
+  else if (page === 'reports') renderReports();
+  else if (page === 'accounts') renderAccounts();
+  else if (page === 'journal') renderJournal();
+  else if (page === 'expenses') renderExpenses();
+  else if (page === 'employees') renderEmployees();
+  else if (page === 'settings') renderSettings();
+  else renderComingSoon(pageTitles[page]);
+}
+
+function toggleMore() {
+  const menu = document.getElementById('more-menu');
+  menu.classList.toggle('show');
+  const nav = document.getElementById('nav-more');
+  nav.classList.toggle('active');
+}
+
+function showFAB() {
+  if (currentPage === 'invoices') openModal('invoice-modal');
+  else if (currentPage === 'customers') openModal('customer-modal');
+  else if (currentPage === 'expenses') openModal('expense-modal');
+}
+
+function showNotif() {
+  alert('لا توجد إشعارات جديدة');
+}
+
+// ══════════════════
+// MODALS
+// ══════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ══════════════════
+// DASHBOARD
+// ══════════════════
+async function renderDashboard() {
+  const data = await apiCall('/dashboard');
+  const kpis = data.data?.kpis || {};
+  const recent = data.data?.recentInvoices || [];
+
+  const statusMap = {
+    PAID: {label:'مدفوعة', cls:'badge-green'},
+    ISSUED: {label:'مُصدرة', cls:'badge-blue'},
+    OVERDUE: {label:'متأخرة', cls:'badge-red'},
+    DRAFT: {label:'مسودة', cls:'badge-gold'}
+  };
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">مرحباً ${USER?.fullName?.split(' ')[0] || 'بك'} 👋</div>
+      <div class="page-sub">${new Date().toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" style="color:#f0b429">${Number(kpis.revenue||0).toLocaleString('ar-SA')}</div>
+        <div class="stat-label">الإيرادات (ر.س)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🧾</div>
+        <div class="stat-value" style="color:#60a5fa">${kpis.invoiceCount||0}</div>
+        <div class="stat-label">الفواتير هذا الشهر</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" style="color:#10b981">${Number(kpis.profit||0).toLocaleString('ar-SA')}</div>
+        <div class="stat-label">صافي الربح (ر.س)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-value" style="color:#ef4444">${kpis.overdueInvoices||0}</div>
+        <div class="stat-label">فواتير متأخرة</div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <div class="quick-action" onclick="openModal('invoice-modal')">
+        <div class="quick-action-icon">🧾</div>
+        <div class="quick-action-label">فاتورة</div>
+      </div>
+      <div class="quick-action" onclick="openModal('customer-modal')">
+        <div class="quick-action-icon">👥</div>
+        <div class="quick-action-label">عميل</div>
+      </div>
+      <div class="quick-action" onclick="openModal('expense-modal')">
+        <div class="quick-action-icon">💸</div>
+        <div class="quick-action-label">مصروف</div>
+      </div>
+      <div class="quick-action" onclick="showPage('reports')">
+        <div class="quick-action-icon">📊</div>
+        <div class="quick-action-label">تقرير</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>🧾 آخر الفواتير</span>
+      <span class="section-more" onclick="showPage('invoices')">عرض الكل</span>
+    </div>
+    <div class="list-card">
+      ${recent.length === 0
+        ? '<div class="empty-state"><div class="empty-icon">🧾</div><div class="empty-title">لا توجد فواتير</div></div>'
+        : recent.map(inv => `
+          <div class="list-item">
+            <div class="list-avatar" style="background:rgba(240,180,41,0.1)">🧾</div>
+            <div class="list-info">
+              <div class="list-name">${inv.clientName || '-'}</div>
+              <div class="list-sub">${inv.invoiceNumber}</div>
+            </div>
+            <div style="text-align:left">
+              <div class="list-amount">${Number(inv.total).toLocaleString('ar-SA')} ر.س</div>
+              <span class="badge ${statusMap[inv.status]?.cls||'badge-blue'}">${statusMap[inv.status]?.label||inv.status}</span>
+            </div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+}
+
+// ══════════════════
+// INVOICES
+// ══════════════════
+async function renderInvoices() {
+  const data = await apiCall('/invoices');
+  invoicesData = data.data?.invoices || [];
+  const statusMap = {
+    PAID: {label:'مدفوعة', cls:'badge-green'},
+    ISSUED: {label:'مُصدرة', cls:'badge-blue'},
+    OVERDUE: {label:'متأخرة', cls:'badge-red'},
+    DRAFT: {label:'مسودة', cls:'badge-gold'}
+  };
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="section-title">
+      <span>🧾 الفواتير (${invoicesData.length})</span>
+      <span class="section-more" onclick="openModal('invoice-modal')">+ جديد</span>
+    </div>
+    <div class="list-card">
+      ${invoicesData.length === 0
+        ? `<div class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <div class="empty-title">لا توجد فواتير</div>
+            <div class="empty-desc">اضغط + لإنشاء فاتورة جديدة</div>
+          </div>`
+        : invoicesData.map(inv => `
+          <div class="list-item">
+            <div class="list-avatar" style="background:rgba(240,180,41,0.1)">🧾</div>
+            <div class="list-info">
+              <div class="list-name">${inv.clientName || '-'}</div>
+              <div class="list-sub">${inv.invoiceNumber} • ${new Date(inv.issueDate).toLocaleDateString('ar-SA')}</div>
+            </div>
+            <div style="text-align:left">
+              <div class="list-amount">${Number(inv.total).toLocaleString('ar-SA')} ر.س</div>
+              <span class="badge ${statusMap[inv.status]?.cls||'badge-blue'}">${statusMap[inv.status]?.label||inv.status}</span>
+            </div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+}
+
+// ══════════════════
+// CUSTOMERS
+// ══════════════════
+async function renderCustomers() {
+  const data = await apiCall('/customers');
+  customersData = data.data || [];
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="section-title">
+      <span>👥 العملاء (${customersData.length})</span>
+      <span class="section-more" onclick="openModal('customer-modal')">+ جديد</span>
+    </div>
+    <div class="list-card">
+      ${customersData.length === 0
+        ? `<div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div class="empty-title">لا يوجد عملاء</div>
+            <div class="empty-desc">اضغط + لإضافة عميل جديد</div>
+          </div>`
+        : customersData.map(c => `
+          <div class="list-item">
+            <div class="list-avatar" style="background:rgba(59,130,246,0.1);color:#60a5fa;font-size:18px">
+              ${(c.name||'?').charAt(0)}
+            </div>
+            <div class="list-info">
+              <div class="list-name">${c.name || '-'}</div>
+              <div class="list-sub">${c.phone || c.email || '-'}</div>
+            </div>
+            <div style="text-align:left">
+              ${c.vatNumber ? `<span class="badge badge-gold" style="direction:ltr">VAT</span>` : ''}
+            </div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+}
+
+// ══════════════════
+// REPORTS
+// ══════════════════
+async function renderReports() {
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">📈 التقارير المالية</div>
+    </div>
+    <div class="list-card" style="margin-bottom:16px">
+      <div class="list-item" onclick="loadReport('pl')">
+        <div class="list-avatar" style="background:rgba(16,185,129,0.1)">📊</div>
+        <div class="list-info">
+          <div class="list-name">قائمة الدخل</div>
+          <div class="list-sub">الأرباح والخسائر</div>
+        </div>
+        <span style="color:#64748b">›</span>
+      </div>
+      <div class="list-item" onclick="loadReport('tb')">
+        <div class="list-avatar" style="background:rgba(59,130,246,0.1)">📋</div>
+        <div class="list-info">
+          <div class="list-name">ميزان المراجعة</div>
+          <div class="list-sub">مجاميع المدين والدائن</div>
+        </div>
+        <span style="color:#64748b">›</span>
+      </div>
+      <div class="list-item" onclick="loadReport('vat')">
+        <div class="list-avatar" style="background:rgba(240,180,41,0.1)">🧮</div>
+        <div class="list-info">
+          <div class="list-name">تقرير الضريبة</div>
+          <div class="list-sub">ضريبة القيمة المضافة</div>
+        </div>
+        <span style="color:#64748b">›</span>
+      </div>
+    </div>
+    <div id="report-result"></div>
+  `;
+}
+
+async function loadReport(type) {
+  const el = document.getElementById('report-result');
+  el.innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
+  const ep = { pl:'/reports/profit-loss', tb:'/reports/trial-balance', vat:'/reports/vat' };
+  const data = await apiCall(ep[type]);
+  if (!data.success) { el.innerHTML = '<div class="empty-state"><div class="empty-title">حدث خطأ</div></div>'; return; }
+
+  if (type === 'pl') {
+    const r = data.data;
+    el.innerHTML = `
+      <div class="section-title">📊 قائمة الدخل</div>
+      <div class="list-card">
+        <div class="totals-box" style="margin:0;border-radius:0">
+          <div class="total-row"><span>إجمالي الإيرادات</span><span style="color:#10b981">${Number(r.revenue?.gross||0).toLocaleString('ar-SA')} ر.س</span></div>
+          <div class="total-row"><span>ضريبة المبيعات</span><span style="color:#f0b429">${Number(r.revenue?.vat||0).toLocaleString('ar-SA')} ر.س</span></div>
+          <div class="total-row"><span>إجمالي المصروفات</span><span style="color:#ef4444">${Number(r.expenses?.total||0).toLocaleString('ar-SA')} ر.س</span></div>
+          <div class="total-row" style="font-weight:700;font-size:15px"><span>صافي الربح</span><span style="color:#f0b429">${Number(r.profit?.gross||0).toLocaleString('ar-SA')} ر.س</span></div>
+        </div>
+      </div>
+    `;
+  } else if (type === 'vat') {
+    const r = data.data;
+    el.innerHTML = `
+      <div class="section-title">🧮 تقرير الضريبة</div>
+      <div class="list-card">
+        <div class="totals-box" style="margin:0;border-radius:0">
+          <div class="total-row"><span>ضريبة المبيعات</span><span style="color:#10b981">${Number(r.sales?.vat||0).toLocaleString('ar-SA')} ر.س</span></div>
+          <div class="total-row"><span>ضريبة المشتريات</span><span style="color:#ef4444">${Number(r.purchases?.vat||0).toLocaleString('ar-SA')} ر.س</span></div>
+          <div class="total-row" style="font-weight:700;font-size:15px"><span>صافي الضريبة المستحقة</span><span style="color:#f0b429">${Number(r.netVatDue||0).toLocaleString('ar-SA')} ر.س</span></div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// ══════════════════
+// ACCOUNTS
+// ══════════════════
+async function renderAccounts() {
+  const data = await apiCall('/accounts');
+  accountsData = data.data || [];
+  const typeColors = { ASSET:'#60a5fa', LIABILITY:'#ef4444', EQUITY:'#8b5cf6', REVENUE:'#10b981', EXPENSE:'#f0b429' };
+  const typeNames = { ASSET:'أصول', LIABILITY:'خصوم', EQUITY:'حقوق', REVENUE:'إيرادات', EXPENSE:'مصروفات' };
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="section-title">🌳 شجرة الحسابات (${accountsData.length})</div>
+    <div class="list-card">
+      ${accountsData.length === 0
+        ? '<div class="empty-state"><div class="empty-icon">🌳</div><div class="empty-title">لا توجد حسابات</div></div>'
+        : accountsData.map(a => `
+          <div class="list-item">
+            <div class="list-avatar" style="background:${typeColors[a.type]}22;color:${typeColors[a.type]};font-family:monospace;font-size:12px;font-weight:700">${a.code}</div>
+            <div class="list-info">
+              <div class="list-name">${a.nameAr}</div>
+              <div class="list-sub">${a.nameEn||''}</div>
+            </div>
+            <span class="badge" style="background:${typeColors[a.type]}22;color:${typeColors[a.type]}">${typeNames[a.type]}</span>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+}
+
+// ══════════════════
+// JOURNAL
+// ══════════════════
+async function renderJournal() {
+  const data = await apiCall('/journal');
+  const entries = data.data || [];
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="section-title">📒 القيود اليومية (${entries.length})</div>
+    <div class="list-card">
+      ${entries.length === 0
+        ? '<div class="empty-state"><div class="empty-icon">📒</div><div class="empty-title">لا توجد قيود</div></div>'
+        : entries.map(e => `
+          <div class="list-item">
+            <div class="list-avatar" style="background:rgba(139,92,246,0.1)">📒</div>
+            <div class="list-info">
+              <div class="list-name">${e.description||'-'}</div>
+              <div class="list-sub">${e.entryNumber} • ${new Date(e.date).toLocaleDateString('ar-SA')}</div>
+            </div>
+            <div style="text-align:left">
+              <div style="font-size:12px;color:#10b981">${Number(e.totalDebit).toLocaleString('ar-SA')}</div>
+              <span class="badge ${e.isPosted?'badge-green':'badge-gold'}">${e.isPosted?'مُرحَّل':'مسودة'}</span>
+            </div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+}
+
+// ══════════════════
+// EXPENSES
+// ══════════════════
+async function renderExpenses() {
+  const data = await apiCall('/expenses');
+  expensesData = data.data || [];
+  const cats = { RENT:'إيجار', UTILITIES:'مرافق', SALARIES:'رواتب', MARKETING:'تسويق', MAINTENANCE:'صيانة', OTHER:'أخرى' };
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="section-title">
+      <span>💸 المصروفات (${expensesData.length})</span>
+      <span class="section-more" onclick="openModal('expense-modal')">+ جديد</span>
+    </div>
+    <div class="list-card">
+      ${expensesData.length === 0
+        ? '<div class="empty-state"><div class="empty-icon">💸</div><div class="empty-title">لا توجد مصروفات</div></div>'
+        : expensesData.map(e => `
+          <div class="list-item">
+            <div class="list-avatar" style="background:rgba(239,68,68,0.1)">💸</div>
+            <div class="list-info">
+              <div class="list-name">${e.title}</div>
+              <div class="list-sub">${cats[e.category]||e.category} • ${new Date(e.date).toLocaleDateString('ar-SA')}</div>
+            </div>
+            <div class="list-amount">${Number(e.amount).toLocaleString('ar-SA')} ر.س</div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+}
+
+// ══════════════════
+// EMPLOYEES
+// ══════════════════
+async function renderEmployees() {
+  const data = await apiCall('/employees');
+  const employees = data.data || [];
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="section-title">👤 الموظفون (${employees.length})</div>
+    <div class="list-card">
+      ${employees.length === 0
+        ? '<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-title">لا يوجد موظفون</div></div>'
+        : employees.map(e => `
+          <div class="list-item">
+            <div class="list-avatar" style="background:rgba(139,92,246,0.1);color:#a78bfa;font-weight:700">${(e.name||'?').charAt(0)}</div>
+            <div class="list-info">
+              <div class="list-name">${e.name}</div>
+              <div class="list-sub">${e.position||''} ${e.department?'• '+e.department:''}</div>
+            </div>
+            <div class="list-amount">${Number(e.salary||0).toLocaleString('ar-SA')} ر.س</div>
+          </div>
+        `).join('')
+      }
+    </div>
+  `;
+}
+
+// ══════════════════
+// SETTINGS
+// ══════════════════
+function renderSettings() {
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">⚙️ الإعدادات</div>
+    </div>
+    <div class="list-card" style="margin-bottom:16px">
+      <div class="list-item">
+        <div class="list-avatar" style="background:rgba(240,180,41,0.1)">👤</div>
+        <div class="list-info">
+          <div class="list-name">${USER?.fullName||'-'}</div>
+          <div class="list-sub">${USER?.username||''} • ${USER?.role||''}</div>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="list-avatar" style="background:rgba(59,130,246,0.1)">📧</div>
+        <div class="list-info">
+          <div class="list-name">البريد الإلكتروني</div>
+          <div class="list-sub">${USER?.email||'-'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="list-card" style="margin-bottom:16px">
+      <div class="list-item">
+        <div class="list-avatar" style="background:rgba(16,185,129,0.1)">🔌</div>
+        <div class="list-info">
+          <div class="list-name">حالة الاتصال</div>
+          <div class="list-sub" style="color:#10b981">متصل بـ Railway ✅</div>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="list-avatar" style="background:rgba(240,180,41,0.1)">⚡</div>
+        <div class="list-info">
+          <div class="list-name">إصدار النظام</div>
+          <div class="list-sub">FastFlow ERP v2.0</div>
+        </div>
+      </div>
+    </div>
+    <button onclick="doLogout()" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px;color:#ef4444;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%">🚪 تسجيل الخروج</button>
+  `;
+}
+
+// ══════════════════
+// COMING SOON
+// ══════════════════
+function renderComingSoon(title) {
+  document.getElementById('main-content').innerHTML = `
+    <div class="empty-state" style="padding:80px 20px">
+      <div class="empty-icon">🔧</div>
+      <div class="empty-title">${title}</div>
+      <div class="empty-desc">هذه الصفحة قيد التطوير<br>قريباً إن شاء الله</div>
+    </div>
+  `;
+}
+
+// ══════════════════
+// INVOICE LOGIC
+// ══════════════════
+function calcTotal() {
+  let subtotal = 0;
+  for (let i = 0; i < itemCount; i++) {
+    const qty = parseFloat(document.getElementById('item-qty-' + i)?.value || 0);
+    const price = parseFloat(document.getElementById('item-price-' + i)?.value || 0);
+    subtotal += qty * price;
+  }
+  const vat = subtotal * 0.15;
+  document.getElementById('subtotal-display').textContent = subtotal.toFixed(2) + ' ر.س';
+  document.getElementById('vat-display').textContent = vat.toFixed(2) + ' ر.س';
+  document.getElementById('total-display').textContent = (subtotal + vat).toFixed(2) + ' ر.س';
+}
+
+function addItem() {
+  const container = document.getElementById('inv-items');
+  const div = document.createElement('div');
+  div.className = 'invoice-item-row';
+  div.innerHTML = `
+    <input class="form-input" placeholder="اسم المنتج / الخدمة" id="item-name-${itemCount}" style="margin-bottom:8px">
+    <div class="invoice-item-inputs">
+      <input class="form-input" type="number" placeholder="الكمية" id="item-qty-${itemCount}" value="1" oninput="calcTotal()">
+      <input class="form-input" type="number" placeholder="السعر" id="item-price-${itemCount}" value="0" oninput="calcTotal()">
+    </div>
+  `;
+  container.appendChild(div);
+  itemCount++;
+}
+
+async function saveInvoice() {
+  const clientName = document.getElementById('inv-client').value;
+  if (!clientName) { alert('يرجى إدخال اسم العميل'); return; }
+
+  const items = [];
+  let subtotal = 0;
+  for (let i = 0; i < itemCount; i++) {
+    const name = document.getElementById('item-name-' + i)?.value;
+    const qty = parseFloat(document.getElementById('item-qty-' + i)?.value || 1);
+    const price = parseFloat(document.getElementById('item-price-' + i)?.value || 0);
+    if (name) { items.push({ name, quantity: qty, unitPrice: price }); subtotal += qty * price; }
+  }
+
+  if (items.length === 0) { alert('يرجى إضافة بند واحد على الأقل'); return; }
+
+  const vat = subtotal * 0.15;
+  const data = await apiCall('/invoices', {
+    method: 'POST',
+    body: JSON.stringify({
+      clientName,
+      clientVat: document.getElementById('inv-vat').value,
+      items, subtotal, vatAmount: vat, total: subtotal + vat,
+      issueDate: new Date(), dueDate: new Date(Date.now() + 30*86400000)
+    })
+  });
+
+  if (data.success) {
+    closeModal('invoice-modal');
+    document.getElementById('inv-client').value = '';
+    document.getElementById('inv-vat').value = '';
+    itemCount = 1;
+    calcTotal();
+    alert('✅ تم إصدار الفاتورة بنجاح!');
+    showPage('invoices');
+  } else {
+    alert('حدث خطأ: ' + (data.error || 'unknown'));
+  }
+}
+
+async function saveCustomer() {
+  const name = document.getElementById('cust-name').value;
+  if (!name) { alert('يرجى إدخال الاسم'); return; }
+
+  const data = await apiCall('/customers', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      phone: document.getElementById('cust-phone').value,
+      email: document.getElementById('cust-email').value,
+      vatNumber: document.getElementById('cust-vat').value,
+    })
+  });
+
+  if (data.success) {
+    closeModal('customer-modal');
+    document.getElementById('cust-name').value = '';
+    document.getElementById('cust-phone').value = '';
+    document.getElementById('cust-email').value = '';
+    document.getElementById('cust-vat').value = '';
+    alert('✅ تم إضافة العميل!');
+    showPage('customers');
+  } else {
+    alert('حدث خطأ: ' + (data.error || 'unknown'));
+  }
+}
+
+async function saveExpense() {
+  const title = document.getElementById('exp-title').value;
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  if (!title || !amount) { alert('يرجى إدخال العنوان والمبلغ'); return; }
+
+  const data = await apiCall('/expenses', {
+    method: 'POST',
+    body: JSON.stringify({
+      title, amount,
+      category: document.getElementById('exp-cat').value,
+      vatAmount: amount * 0.15,
+      date: new Date()
+    })
+  });
+
+  if (data.success) {
+    closeModal('expense-modal');
+    document.getElementById('exp-title').value = '';
+    document.getElementById('exp-amount').value = '';
+    alert('✅ تم حفظ المصروف!');
+    showPage('expenses');
+  } else {
+    alert('حدث خطأ: ' + (data.error || 'unknown'));
+  }
+}
+
+// Close more menu on outside click
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('more-menu');
+  const navMore = document.getElementById('nav-more');
+  if (menu.classList.contains('show') && !menu.contains(e.target) && !navMore.contains(e.target)) {
+    menu.classList.remove('show');
+    navMore.classList.remove('active');
+  }
+});
+</script>
+</body>
+</html>
