@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f0b429">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FastFlow ERP">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="FastFlow ERP">
+
 <title>FastFlow ERP - Offline</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -135,7 +142,37 @@ body { font-family:'Cairo',sans-serif; background:#070b18; color:white; directio
   <div class="topbar">
     <div class="topbar-logo">⚡</div>
     <div class="topbar-title" id="page-title-bar">لوحة التحكم</div>
-    <button class="sync-btn" id="sync-btn" onclick="syncNow()">🔄 مزامنة</button>
+    <button class="sync-btn" id="voice-btn" onclick="toggleVoice()" title="الأوامر الصوتية">🎤</button>
+    <select id="lang-select" onchange="changeLang(this.value)" style="background:#0d1425;border:1px solid #1e2d4a;border-radius:8px;padding:4px 6px;color:#f0b429;font-size:11px;cursor:pointer;font-family:Cairo,sans-serif">
+      <option value="ar">🇸🇦 عربي</option>
+      <option value="en">🇺🇸 English</option>
+      <option value="ur">🇵🇰 اردو</option>
+      <option value="hi">🇮🇳 हिंदी</option>
+      <option value="bn">🇧🇩 বাংলা</option>
+      <option value="tl">🇵🇭 Filipino</option>
+      <option value="id">🇮🇩 Indonesia</option>
+      <option value="fr">🇫🇷 Français</option>
+      <option value="tr">🇹🇷 Türkçe</option>
+      <option value="zh">🇨🇳 中文</option>
+    </select>
+    <button class="sync-btn" id="sync-btn" onclick="syncNow()">🔄</button>
+  </div>
+  <div id="voice-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;flex-direction:column;align-items:center;justify-content:center">
+    <div style="background:#0f1629;border:2px solid #f0b429;border-radius:24px;padding:32px;text-align:center;max-width:320px;width:90%">
+      <div style="font-size:60px;margin-bottom:16px" id="voice-icon">🎤</div>
+      <div style="font-size:16px;font-weight:700;color:#f0b429;margin-bottom:8px" id="voice-status">قل أمرك...</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:20px" id="voice-text">مثال: "افتح الفواتير" أو "فاتورة جديدة"</div>
+      <div style="font-size:12px;color:#94a3b8;background:#0d1425;border-radius:10px;padding:12px;margin-bottom:16px;text-align:right;line-height:1.9">
+        🧾 "افتح الفواتير"<br>
+        👥 "العملاء" / "عميل جديد"<br>
+        💸 "المصروفات" / "مصروف جديد"<br>
+        📊 "الرئيسية" / "لوحة التحكم"<br>
+        📈 "التقارير"<br>
+        🔄 "مزامنة"<br>
+        🚪 "خروج"
+      </div>
+      <button onclick="stopVoice()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 24px;color:#ef4444;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer">✕ إغلاق</button>
+    </div>
   </div>
   <div class="offline-indicator" id="offline-indicator">📴 وضع Offline — البيانات محفوظة محلياً</div>
   <div class="content" id="main-content"></div>
@@ -604,7 +641,34 @@ async function renderDashboard() {
           </div>`).join('')
       }
     </div>
+    <div class="section-title"><span>⚡ آخر النشاطات</span></div>
+    <div class="list-card" id="activities-list"><div class="loading">⏳ جاري التحميل...</div></div>
   `;
+
+  // Load activities
+  loadActivities();
+}
+
+async function loadActivities() {
+  if (!isOnline) return;
+  try {
+    const data = await apiCall('/activities');
+    if (!data.success) return;
+    const actEl = document.getElementById('activities-list');
+    if (!actEl) return;
+    const typeColors = { invoice: '#f0b429', customer: '#60a5fa', expense: '#ef4444' };
+    actEl.innerHTML = data.data.length === 0
+      ? '<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">لا توجد نشاطات</div></div>'
+      : data.data.map(a => `
+        <div class="list-item">
+          <div class="list-avatar" style="background:${typeColors[a.type]}22;font-size:20px">${a.icon}</div>
+          <div class="list-info">
+            <div class="list-name">${a.title}</div>
+            <div class="list-sub">${new Date(a.date).toLocaleDateString('ar-SA')}</div>
+          </div>
+          ${a.amount ? `<div class="list-amount">${Number(a.amount).toLocaleString('ar-SA')} ر.س</div>` : ''}
+        </div>`).join('');
+  } catch(e) {}
 }
 
 // ══════════════════════════════════════
@@ -806,6 +870,10 @@ function renderSettings() {
       <div class="list-item" onclick="syncNow()" style="cursor:pointer">
         <div class="list-avatar" style="background:rgba(16,185,129,0.1)">🔄</div>
         <div class="list-info"><div class="list-name">مزامنة البيانات</div><div class="list-sub" style="color:#10b981">${isOnline ? 'متصل بالإنترنت ✅' : 'غير متصل 📴'}</div></div>
+      </div>
+      <div class="list-item" onclick="installPWA()" style="cursor:pointer" id="install-btn">
+        <div class="list-avatar" style="background:rgba(240,180,41,0.1)">📲</div>
+        <div class="list-info"><div class="list-name">تثبيت التطبيق</div><div class="list-sub" style="color:#f0b429">تثبيت على الجهاز بدون App Store</div></div>
       </div>
       <div class="list-item">
         <div class="list-avatar" style="background:rgba(240,180,41,0.1)">⚡</div>
@@ -1177,6 +1245,290 @@ async function shareInvoice(id) {
   } else {
     navigator.clipboard.writeText(text).then(() => alert('✅ تم نسخ تفاصيل الفاتورة!'));
   }
+}
+
+
+// ══════════════════════════════════════
+// TRANSLATIONS
+// ══════════════════════════════════════
+const translations = {
+  ar: {
+    dashboard: 'لوحة التحكم', invoices: 'الفواتير', customers: 'العملاء',
+    expenses: 'المصروفات', products: 'المنتجات', reports: 'التقارير',
+    accounts: 'شجرة الحسابات', employees: 'الموظفون', settings: 'الإعدادات',
+    welcome: 'مرحباً', newInvoice: 'فاتورة جديدة', newCustomer: 'عميل جديد',
+    newExpense: 'مصروف جديد', sync: 'مزامنة', logout: 'خروج',
+    revenue: 'الإيرادات', profit: 'صافي الربح', totalInvoices: 'إجمالي الفواتير',
+    totalExpenses: 'المصروفات', save: 'حفظ', cancel: 'إلغاء', print: 'طباعة',
+    clientName: 'اسم العميل', vatNumber: 'الرقم الضريبي', amount: 'المبلغ',
+    category: 'الفئة', date: 'التاريخ', back: 'رجوع', loading: 'جاري التحميل',
+    noData: 'لا توجد بيانات', more: 'المزيد', paid: 'مدفوعة', issued: 'مُصدرة',
+    overdue: 'متأخرة', draft: 'مسودة', total: 'الإجمالي', subtotal: 'قبل الضريبة',
+    vat: 'ضريبة 15%', offline: 'وضع Offline', syncing: 'جاري المزامنة'
+  },
+  en: {
+    dashboard: 'Dashboard', invoices: 'Invoices', customers: 'Customers',
+    expenses: 'Expenses', products: 'Products', reports: 'Reports',
+    accounts: 'Chart of Accounts', employees: 'Employees', settings: 'Settings',
+    welcome: 'Welcome', newInvoice: 'New Invoice', newCustomer: 'New Customer',
+    newExpense: 'New Expense', sync: 'Sync', logout: 'Logout',
+    revenue: 'Revenue', profit: 'Net Profit', totalInvoices: 'Total Invoices',
+    totalExpenses: 'Expenses', save: 'Save', cancel: 'Cancel', print: 'Print',
+    clientName: 'Client Name', vatNumber: 'VAT Number', amount: 'Amount',
+    category: 'Category', date: 'Date', back: 'Back', loading: 'Loading',
+    noData: 'No data', more: 'More', paid: 'Paid', issued: 'Issued',
+    overdue: 'Overdue', draft: 'Draft', total: 'Total', subtotal: 'Subtotal',
+    vat: 'VAT 15%', offline: 'Offline Mode', syncing: 'Syncing...'
+  },
+  ur: {
+    dashboard: 'ڈیش بورڈ', invoices: 'انوائسز', customers: 'گاہک',
+    expenses: 'اخراجات', products: 'مصنوعات', reports: 'رپورٹس',
+    accounts: 'اکاؤنٹس', employees: 'ملازمین', settings: 'ترتیبات',
+    welcome: 'خوش آمدید', newInvoice: 'نئی انوائس', newCustomer: 'نیا گاہک',
+    newExpense: 'نیا خرچ', sync: 'ہم آہنگی', logout: 'لاگ آؤٹ',
+    revenue: 'آمدنی', profit: 'خالص منافع', totalInvoices: 'کل انوائسز',
+    totalExpenses: 'کل اخراجات', save: 'محفوظ', cancel: 'منسوخ', print: 'پرنٹ',
+    clientName: 'گاہک کا نام', vatNumber: 'ٹیکس نمبر', amount: 'رقم',
+    category: 'زمرہ', date: 'تاریخ', back: 'واپس', loading: 'لوڈ ہو رہا ہے',
+    noData: 'کوئی ڈیٹا نہیں', more: 'مزید', paid: 'ادا', issued: 'جاری',
+    overdue: 'زیادہ وقت', draft: 'مسودہ', total: 'کل', subtotal: 'ذیلی کل',
+    vat: 'ویٹ 15%', offline: 'آف لائن موڈ', syncing: 'ہم آہنگ ہو رہا ہے'
+  },
+  hi: {
+    dashboard: 'डैशबोर्ड', invoices: 'चालान', customers: 'ग्राहक',
+    expenses: 'खर्च', products: 'उत्पाद', reports: 'रिपोर्ट',
+    accounts: 'खाते', employees: 'कर्मचारी', settings: 'सेटिंग्स',
+    welcome: 'स्वागत', newInvoice: 'नया चालान', newCustomer: 'नया ग्राहक',
+    newExpense: 'नया खर्च', sync: 'सिंक', logout: 'लॉगआउट',
+    revenue: 'राजस्व', profit: 'शुद्ध लाभ', totalInvoices: 'कुल चालान',
+    totalExpenses: 'कुल खर्च', save: 'सहेजें', cancel: 'रद्द करें', print: 'प्रिंट',
+    clientName: 'ग्राहक का नाम', vatNumber: 'कर नंबर', amount: 'राशि',
+    category: 'श्रेणी', date: 'तारीख', back: 'वापस', loading: 'लोड हो रहा है',
+    noData: 'कोई डेटा नहीं', more: 'अधिक', paid: 'भुगतान', issued: 'जारी',
+    overdue: 'अतिदेय', draft: 'मसौदा', total: 'कुल', subtotal: 'उप-कुल',
+    vat: 'वैट 15%', offline: 'ऑफलाइन मोड', syncing: 'सिंक हो रहा है'
+  },
+  fr: {
+    dashboard: 'Tableau de bord', invoices: 'Factures', customers: 'Clients',
+    expenses: 'Dépenses', products: 'Produits', reports: 'Rapports',
+    accounts: 'Comptes', employees: 'Employés', settings: 'Paramètres',
+    welcome: 'Bienvenue', newInvoice: 'Nouvelle facture', newCustomer: 'Nouveau client',
+    newExpense: 'Nouvelle dépense', sync: 'Synchroniser', logout: 'Déconnexion',
+    revenue: 'Revenus', profit: 'Bénéfice net', totalInvoices: 'Total factures',
+    totalExpenses: 'Total dépenses', save: 'Sauvegarder', cancel: 'Annuler', print: 'Imprimer',
+    clientName: 'Nom du client', vatNumber: 'Numéro TVA', amount: 'Montant',
+    category: 'Catégorie', date: 'Date', back: 'Retour', loading: 'Chargement',
+    noData: 'Aucune donnée', more: 'Plus', paid: 'Payé', issued: 'Émis',
+    overdue: 'En retard', draft: 'Brouillon', total: 'Total', subtotal: 'Sous-total',
+    vat: 'TVA 15%', offline: 'Mode hors ligne', syncing: 'Synchronisation...'
+  }
+};
+
+// Add other languages with English fallback
+['bn','tl','id','tr','zh'].forEach(lang => {
+  translations[lang] = { ...translations.en };
+});
+
+let currentLang = localStorage.getItem('ff_lang') || 'ar';
+
+function t(key) {
+  return (translations[currentLang] || translations.ar)[key] || translations.ar[key] || key;
+}
+
+function changeLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('ff_lang', lang);
+  const isRTL = ['ar', 'ur'].includes(lang);
+  document.body.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
+  document.getElementById('page-title-bar').textContent = t(currentPage) || pageTitles[currentPage];
+  showPage(currentPage);
+}
+
+// Apply saved language on load
+setTimeout(() => {
+  const savedLang = localStorage.getItem('ff_lang') || 'ar';
+  document.getElementById('lang-select').value = savedLang;
+  if (savedLang !== 'ar') changeLang(savedLang);
+}, 500);
+
+// ══════════════════════════════════════
+// VOICE COMMANDS
+// ══════════════════════════════════════
+let voiceActive = false;
+let recognition = null;
+
+function toggleVoice() {
+  if (voiceActive) { stopVoice(); return; }
+  startVoice();
+}
+
+function startVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('عذراً، متصفحك لا يدعم الأوامر الصوتية. استخدم Chrome.');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = currentLang === 'ar' ? 'ar-SA' :
+                     currentLang === 'en' ? 'en-US' :
+                     currentLang === 'ur' ? 'ur-PK' :
+                     currentLang === 'hi' ? 'hi-IN' :
+                     currentLang === 'fr' ? 'fr-FR' :
+                     currentLang === 'tr' ? 'tr-TR' :
+                     currentLang === 'zh' ? 'zh-CN' : 'ar-SA';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  voiceActive = true;
+  document.getElementById('voice-overlay').style.display = 'flex';
+  document.getElementById('voice-btn').textContent = '🔴';
+  document.getElementById('voice-icon').textContent = '🎤';
+  document.getElementById('voice-status').textContent = currentLang === 'ar' ? 'استمع...' : 'Listening...';
+
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript.toLowerCase();
+    document.getElementById('voice-text').textContent = '"' + text + '"';
+    if (event.results[0].isFinal) processVoiceCommand(text);
+  };
+
+  recognition.onerror = () => {
+    document.getElementById('voice-status').textContent = currentLang === 'ar' ? 'لم أسمعك، حاول مرة أخرى' : 'Not heard, try again';
+  };
+
+  recognition.onend = () => {
+    if (voiceActive) {
+      setTimeout(() => { if (voiceActive) recognition.start(); }, 500);
+    }
+  };
+
+  recognition.start();
+}
+
+function stopVoice() {
+  voiceActive = false;
+  if (recognition) recognition.stop();
+  document.getElementById('voice-overlay').style.display = 'none';
+  document.getElementById('voice-btn').textContent = '🎤';
+}
+
+function processVoiceCommand(text) {
+  // Arabic commands
+  const commands = {
+    'الرئيسية|لوحة التحكم|dashboard|home|inicio': () => showPage('dashboard'),
+    'الفواتير|invoices|factures|فواتير': () => showPage('invoices'),
+    'فاتورة جديدة|new invoice|nouvelle facture': () => { showPage('invoices'); openModal('invoice-modal'); },
+    'العملاء|customers|clients|گاہک|ग्राहक': () => showPage('customers'),
+    'عميل جديد|new customer|nouveau client': () => { showPage('customers'); openModal('customer-modal'); },
+    'المصروفات|expenses|dépenses|اخراجات|खर्च': () => showPage('expenses'),
+    'مصروف جديد|new expense|nouvelle dépense': () => { showPage('expenses'); openModal('expense-modal'); },
+    'المنتجات|products|produits': () => showPage('products'),
+    'التقارير|reports|rapports|رپورٹ': () => showPage('reports'),
+    'الموظفون|employees|employés': () => showPage('employees'),
+    'الإعدادات|settings|paramètres': () => showPage('settings'),
+    'مزامنة|sync|synchroniser': () => syncNow(),
+    'خروج|logout|déconnexion': () => doLogout(),
+  };
+
+  let executed = false;
+  for (const [patterns, action] of Object.entries(commands)) {
+    if (patterns.split('|').some(p => text.includes(p))) {
+      action();
+      executed = true;
+      document.getElementById('voice-icon').textContent = '✅';
+      document.getElementById('voice-status').textContent = currentLang === 'ar' ? 'تم!' : 'Done!';
+      setTimeout(stopVoice, 1500);
+      break;
+    }
+  }
+
+  if (!executed) {
+    document.getElementById('voice-icon').textContent = '❓';
+    document.getElementById('voice-status').textContent = currentLang === 'ar' ? 'لم أفهم، حاول مرة أخرى' : 'Not understood, try again';
+  }
+
+  // Speak response
+  if ('speechSynthesis' in window) {
+    const msg = new SpeechSynthesisUtterance(
+      executed
+        ? (currentLang === 'ar' ? 'تم' : 'Done')
+        : (currentLang === 'ar' ? 'لم أفهم' : 'Not understood')
+    );
+    msg.lang = recognition?.lang || 'ar-SA';
+    window.speechSynthesis.speak(msg);
+  }
+}
+
+
+// ══════════════════════════════════════
+// PWA INSTALL
+// ══════════════════════════════════════
+// Add manifest dynamically
+const manifest = {
+  name: 'FastFlow ERP',
+  short_name: 'FastFlow',
+  start_url: '.',
+  display: 'standalone',
+  background_color: '#070b18',
+  theme_color: '#f0b429',
+  description: 'نظام ERP متكامل يعمل بدون إنترنت',
+  icons: [{
+    src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23f0b429'/><text y='75' font-size='60' text-anchor='middle' x='50'>⚡</text></svg>",
+    sizes: '192x192',
+    type: 'image/svg+xml'
+  }]
+};
+const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(manifestBlob);
+const manifestLink = document.createElement('link');
+manifestLink.rel = 'manifest';
+manifestLink.href = manifestURL;
+document.head.appendChild(manifestLink);
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install button
+  const installBtn = document.getElementById('install-btn');
+  if (installBtn) installBtn.style.display = 'block';
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('PWA installed');
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  console.log('FastFlow PWA installed!');
+  const installBtn = document.getElementById('install-btn');
+  if (installBtn) installBtn.style.display = 'none';
+});
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'fastflow-v1';
+    const URLS = ['/'];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/')))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
 }
 
 </script>
