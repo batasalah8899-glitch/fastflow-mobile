@@ -118,11 +118,9 @@ body { font-family:'Cairo',sans-serif; background:#070b18; color:white; directio
     <div class="login-logo">
       <div class="login-logo-icon">⚡</div>
       <div class="login-title">FastFlow ERP</div>
-      <div class="login-sub">يعمل بدون إنترنت ✓</div>
+      <div class="login-sub">نظام المحاسبة السحابي المتكامل</div>
     </div>
-    <div class="offline-badge" id="offline-login-msg" style="display:none">
-      📴 وضع Offline — بياناتك محفوظة محلياً
-    </div>
+    
     <div class="error-msg" id="login-error"></div>
     <div class="form-group">
       <label class="form-label">اسم المستخدم</label>
@@ -133,7 +131,107 @@ body { font-family:'Cairo',sans-serif; background:#070b18; color:white; directio
       <input class="form-input" id="inp-password" type="password" placeholder="••••••••" autocomplete="current-password">
     </div>
     <button class="btn-login" id="btn-login" onclick="doLogin()">تسجيل الدخول</button>
+    <div style="text-align:center;margin-top:14px;font-size:12px;color:#64748b">
+      ليس لديك حساب؟ 
+      <span onclick="toggleRegister()" style="color:#f0b429;cursor:pointer;font-weight:700">سجّل الآن</span>
+    </div>
     <div style="text-align:center;margin-top:16px;font-size:11px;color:#64748b">FastFlow ERP v2.0 | Offline Ready</div>
+  </div>
+
+  <!-- REGISTER CARD -->
+  <div class="login-card" id="register-card" style="display:none;margin-top:16px">
+    <div style="font-size:16px;font-weight:700;color:#f0b429;margin-bottom:16px;text-align:center">📝 حساب جديد</div>
+    <div class="form-group">
+      <label class="form-label">اسم المستخدم</label>
+      <input class="form-input" id="reg-username" type="text" placeholder="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">كلمة المرور</label>
+      <input class="form-input" id="reg-password" type="password" placeholder="8 أحرف على الأقل">
+    </div>
+    <div class="form-group">
+      <label class="form-label">الاسم الكامل</label>
+      <input class="form-input" id="reg-fullname" type="text" placeholder="الاسم الكامل">
+    </div>
+    <div class="form-group">
+      <label class="form-label">اسم الشركة</label>
+      <input class="form-input" id="reg-company" type="text" placeholder="شركة ...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">🏭 القطاع</label>
+      <select class="form-input" id="reg-sector">
+        <optgroup label="🍽️ الغذاء والمشروبات">
+          <option value="restaurant">🍔 مطعم / برغر</option>
+          <option value="cafe">☕ كافيه / مقهى</option>
+          <option value="supermarket">🛒 سوبر ماركت / بقالة</option>
+          <option value="bakery">🥐 مخبز / حلويات</option>
+          <option value="butchery">🥩 لحوم / مجزر</option>
+          <option value="poultry">🍗 دواجن</option>
+        </optgroup>
+        <optgroup label="🛍️ التجزئة والملابس">
+          <option value="clothing">👕 ملابس وأزياء</option>
+          <option value="shoes">👟 أحذية وشنط</option>
+          <option value="gold">💍 ذهب ومجوهرات</option>
+          <option value="optics">👁️ بصريات ونظارات</option>
+          <option value="electronics">📱 إلكترونيات وجوالات</option>
+          <option value="furniture">🪑 أثاث وديكور</option>
+          <option value="toys">🧸 ألعاب أطفال</option>
+        </optgroup>
+        <optgroup label="🏥 الطبي والصحي">
+          <option value="clinic">🏥 عيادة طبية</option>
+          <option value="dental">🦷 عيادة أسنان</option>
+          <option value="pharmacy">💊 صيدلية</option>
+          <option value="lab">🧪 مختبر طبي</option>
+          <option value="salon">💆 صالون تجميل / سبا</option>
+          <option value="gym">🏋️ صالة رياضية</option>
+          <option value="veterinary">🐾 عيادة بيطرية</option>
+        </optgroup>
+        <optgroup label="🏭 الصناعة والتصنيع">
+          <option value="factory">🏭 مصنع عام</option>
+          <option value="workshop">🔧 ورشة سيارات</option>
+          <option value="construction">🏗️ مقاولات وبناء</option>
+          <option value="autoparts">🛻 قطع غيار سيارات</option>
+          <option value="electrical">⚡ كهرباء وسباكة</option>
+          <option value="printing">🖨️ مطبعة وطباعة</option>
+          <option value="carpentry">🪚 نجارة وأثاث</option>
+        </optgroup>
+        <optgroup label="🏢 الخدمات المهنية">
+          <option value="realestate">🏠 عقارات وإيجارات</option>
+          <option value="school">🎓 مدرسة ومعهد</option>
+          <option value="shipping">🚚 شحن وتوصيل</option>
+          <option value="hotel">🏨 فندق وشقق مفروشة</option>
+          <option value="lawfirm">⚖️ مكتب قانوني</option>
+          <option value="accounting">📊 مكتب محاسبة</option>
+          <option value="tech">💻 شركة تقنية وبرمجة</option>
+          <option value="travel">✈️ سياحة وسفر</option>
+        </optgroup>
+        <optgroup label="📦 التجارة والتوزيع">
+          <option value="wholesale">🏬 تجارة جملة</option>
+          <option value="gastation">⛽ محطة وقود</option>
+          <option value="agriculture">🌿 مزرعة وزراعة</option>
+          <option value="bookstore">📚 مكتبة وقرطاسية</option>
+          <option value="petshop">🐾 محل حيوانات أليفة</option>
+        </optgroup>
+        <optgroup label="🏢 أخرى">
+          <option value="general">🏢 شركة عامة</option>
+          <option value="other">📋 قطاع آخر</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الرقم الضريبي (VAT)</label>
+      <input class="form-input" id="reg-vat" type="text" placeholder="310012345600003">
+    </div>
+    <div class="form-group">
+      <label class="form-label">السجل التجاري (CR)</label>
+      <input class="form-input" id="reg-cr" type="text" placeholder="1010123456">
+    </div>
+    <div class="error-msg" id="reg-error"></div>
+    <button class="btn-login" id="btn-register" onclick="doRegister()">✅ إنشاء الحساب</button>
+    <div style="text-align:center;margin-top:12px;font-size:12px;color:#64748b">
+      عندك حساب؟ 
+      <span onclick="toggleRegister()" style="color:#f0b429;cursor:pointer;font-weight:700">سجّل دخول</span>
+    </div>
   </div>
 </div>
 
@@ -174,7 +272,7 @@ body { font-family:'Cairo',sans-serif; background:#070b18; color:white; directio
       <button onclick="stopVoice()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 24px;color:#ef4444;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer">✕ إغلاق</button>
     </div>
   </div>
-  <div class="offline-indicator" id="offline-indicator">📴 وضع Offline — البيانات محفوظة محلياً</div>
+  <div class="offline-indicator" id="offline-indicator" style="display:none"></div>
   <div class="content" id="main-content"></div>
   <button class="btn-fab" id="fab-btn" onclick="showFAB()" style="display:none">＋</button>
   <div class="bottom-nav">
@@ -372,14 +470,14 @@ function dbAdd(store, data) {
 // ══════════════════════════════════════
 window.addEventListener('online', () => {
   isOnline = true;
-  document.getElementById('offline-indicator').classList.remove('show');
+  // online mode active
   document.getElementById('sync-btn').textContent = '🔄 مزامنة';
   syncNow();
 });
 
 window.addEventListener('offline', () => {
   isOnline = false;
-  document.getElementById('offline-indicator').classList.add('show');
+  // offline mode active
 });
 
 // ══════════════════════════════════════
@@ -448,7 +546,7 @@ async function doLogin() {
       USER = savedUser.value;
       TOKEN = savedToken?.value || '';
       localStorage.setItem('ff_user', JSON.stringify(USER));
-      document.getElementById('offline-indicator').classList.add('show');
+      // offline mode active
       showApp();
       return;
     }
@@ -477,7 +575,7 @@ function doLogout() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'flex';
-  if (!isOnline) document.getElementById('offline-indicator').classList.add('show');
+  if (!isOnline) // offline mode active
   showPage('dashboard');
 }
 
@@ -1083,13 +1181,13 @@ async function saveProduct() {
   await initDB();
 
   if (!isOnline) {
-    document.getElementById('offline-login-msg').style.display = 'block';
+    
   }
 
   if (TOKEN && USER) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
-    if (!isOnline) document.getElementById('offline-indicator').classList.add('show');
+    if (!isOnline) // offline mode active
     await loadAllData();
     showPage('dashboard');
   }
@@ -1529,6 +1627,88 @@ if ('serviceWorker' in navigator) {
   const blob = new Blob([swCode], {type: 'application/javascript'});
   const swUrl = URL.createObjectURL(blob);
   navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+
+// ══════════════════════════════════════
+// REGISTER
+// ══════════════════════════════════════
+function toggleRegister() {
+  const regCard = document.getElementById('register-card');
+  const loginCard = document.querySelector('.login-card');
+  if (regCard.style.display === 'none') {
+    regCard.style.display = 'block';
+    loginCard.style.display = 'none';
+  } else {
+    regCard.style.display = 'none';
+    loginCard.style.display = 'block';
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value;
+  const password = document.getElementById('reg-password').value;
+  const fullName = document.getElementById('reg-fullname').value;
+  const companyNameAr = document.getElementById('reg-company').value;
+  const sector = document.getElementById('reg-sector').value;
+  const vatNumber = document.getElementById('reg-vat').value;
+  const crNumber = document.getElementById('reg-cr').value;
+  const errEl = document.getElementById('reg-error');
+  const btn = document.getElementById('btn-register');
+
+  if (!username || !password || !fullName || !companyNameAr) {
+    errEl.textContent = 'يرجى إدخال جميع الحقول المطلوبة';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = '⏳ جاري إنشاء الحساب...';
+  btn.disabled = true;
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(API + '/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username, password, fullName,
+        email: username + '@fastflow.com',
+        phone: '0500000000',
+        companyNameAr: companyNameAr,
+        vatNumber: vatNumber || '310000000000003',
+        crNumber: crNumber || '1010000000',
+        sector
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      TOKEN = data.data.token;
+      USER = data.data.user;
+      localStorage.setItem('ff_token', TOKEN);
+      localStorage.setItem('ff_user', JSON.stringify(USER));
+      await dbPut('settings', { key: 'user', value: USER });
+      await dbPut('settings', { key: 'token', value: TOKEN });
+      await dbPut('settings', { key: 'credentials', value: { username, password } });
+      alert('✅ تم إنشاء الحساب بنجاح!');
+      showApp();
+    } else {
+      errEl.textContent = data.error || 'حدث خطأ، حاول مرة أخرى';
+      errEl.style.display = 'block';
+      btn.textContent = '✅ إنشاء الحساب';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    errEl.textContent = 'لا يوجد اتصال بالإنترنت';
+    errEl.style.display = 'block';
+    btn.textContent = '✅ إنشاء الحساب';
+    btn.disabled = false;
+  }
 }
 
 </script>
