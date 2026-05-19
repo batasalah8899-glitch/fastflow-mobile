@@ -1438,7 +1438,42 @@ function changeLang(lang) {
   localStorage.setItem('ff_lang', lang);
   const isRTL = ['ar', 'ur'].includes(lang);
   document.body.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
-  document.getElementById('page-title-bar').textContent = t(currentPage) || pageTitles[currentPage];
+  document.body.style.fontFamily = "'Cairo', sans-serif";
+
+  // Update nav labels
+  const navLabels = {
+    ar: ['الرئيسية','الفواتير','العملاء','المصروفات','المزيد'],
+    en: ['Dashboard','Invoices','Customers','Expenses','More'],
+    ur: ['ڈیش بورڈ','انوائسز','گاہک','اخراجات','مزید'],
+    hi: ['डैशबोर्ड','चालान','ग्राहक','खर्च','अधिक'],
+    fr: ['Tableau','Factures','Clients','Dépenses','Plus'],
+    tr: ['Panel','Faturalar','Müşteriler','Giderler','Daha'],
+    id: ['Dashboard','Faktur','Pelanggan','Pengeluaran','Lainnya'],
+    tl: ['Dashboard','Mga Invoice','Mga Customer','Gastos','Higit Pa'],
+    bn: ['ড্যাশবোর্ড','চালান','গ্রাহক','খরচ','আরো'],
+    zh: ['仪表板','发票','客户','费用','更多'],
+  };
+  const labels = navLabels[lang] || navLabels.ar;
+  const navItems = document.querySelectorAll('.nav-item span:last-child');
+  if (navItems.length >= 5) {
+    navItems[0].textContent = labels[0];
+    navItems[1].textContent = labels[1];
+    navItems[2].textContent = labels[2];
+    navItems[3].textContent = labels[3];
+    navItems[4].textContent = labels[4];
+  }
+
+  // Update topbar title
+  const titles = {
+    ar: {dashboard:'لوحة التحكم',invoices:'الفواتير',customers:'العملاء',expenses:'المصروفات',products:'المنتجات',reports:'التقارير',accounts:'الحسابات',employees:'الموظفون',settings:'الإعدادات'},
+    en: {dashboard:'Dashboard',invoices:'Invoices',customers:'Customers',expenses:'Expenses',products:'Products',reports:'Reports',accounts:'Accounts',employees:'Employees',settings:'Settings'},
+    ur: {dashboard:'ڈیش بورڈ',invoices:'انوائسز',customers:'گاہک',expenses:'اخراجات',products:'مصنوعات',reports:'رپورٹس',accounts:'اکاؤنٹس',employees:'ملازمین',settings:'ترتیبات'},
+    hi: {dashboard:'डैशबोर्ड',invoices:'चालान',customers:'ग्राहक',expenses:'खर्च',products:'उत्पाद',reports:'रिपोर्ट',accounts:'खाते',employees:'कर्मचारी',settings:'सेटिंग्स'},
+    fr: {dashboard:'Tableau de bord',invoices:'Factures',customers:'Clients',expenses:'Dépenses',products:'Produits',reports:'Rapports',accounts:'Comptes',employees:'Employés',settings:'Paramètres'},
+  };
+  const pageTitle = (titles[lang] || titles.en)[currentPage] || currentPage;
+  document.getElementById('page-title-bar').textContent = pageTitle;
+
   showPage(currentPage);
 }
 
