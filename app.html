@@ -983,6 +983,13 @@ function renderSettings() {
         <div class="list-info"><div class="list-name">تثبيت التطبيق</div><div class="list-sub" style="color:#f0b429">تثبيت على الجهاز بدون App Store</div></div>
       </div>
       <div class="list-item">
+        <div class="list-avatar" style="background:rgba(139,92,246,0.1)">🏭</div>
+        <div class="list-info">
+          <div class="list-name">القطاع</div>
+          <div class="list-sub" style="color:#a78bfa">${USER?.company?.sector || 'general'}</div>
+        </div>
+      </div>
+      <div class="list-item">
         <div class="list-avatar" style="background:rgba(240,180,41,0.1)">⚡</div>
         <div class="list-info"><div class="list-name">الإصدار</div><div class="list-sub">FastFlow ERP v2.0 Offline</div></div>
       </div>
@@ -1455,11 +1462,11 @@ function changeLang(lang) {
     en: ['Dashboard','Invoices','Customers','Expenses','More'],
     ur: ['ڈیش بورڈ','انوائسز','گاہک','اخراجات','مزید'],
     hi: ['डैशबोर्ड','चालान','ग्राहक','खर्च','अधिक'],
+    bn: ['ড্যাশবোর্ড','চালান','গ্রাহক','খরচ','আরো'],
+    tl: ['Dashboard','Mga Invoice','Mga Customer','Gastos','Higit Pa'],
+    id: ['Dashboard','Faktur','Pelanggan','Pengeluaran','Lainnya'],
     fr: ['Tableau','Factures','Clients','Dépenses','Plus'],
     tr: ['Panel','Faturalar','Müşteriler','Giderler','Daha'],
-    id: ['Dashboard','Faktur','Pelanggan','Pengeluaran','Lainnya'],
-    tl: ['Dashboard','Mga Invoice','Mga Customer','Gastos','Higit Pa'],
-    bn: ['ড্যাশবোর্ড','চালান','গ্রাহক','খরচ','আরো'],
     zh: ['仪表板','发票','客户','费用','更多'],
   };
   const labels = navLabels[lang] || navLabels.ar;
