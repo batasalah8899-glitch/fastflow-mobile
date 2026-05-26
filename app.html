@@ -336,6 +336,56 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
         </div>
       </div>
     </div>
+    <div class="form-group" style="margin-top:8px">
+      <label class="form-label">طريقة الدفع</label>
+      <select class="form-input" id="inv-payment-method">
+        <option value="">اختر...</option>
+        <optgroup label="💵 نقدي"><option value="CASH">نقدي</option></optgroup>
+        <optgroup label="💳 بطاقات">
+          <option value="MADA">مدى MADA</option>
+          <option value="VISA">فيزا</option>
+          <option value="MASTERCARD">ماستركارد</option>
+          <option value="APPLE_PAY">Apple Pay</option>
+          <option value="GOOGLE_PAY">Google Pay</option>
+          <option value="STC_PAY">STC Pay</option>
+        </optgroup>
+        <optgroup label="🏦 البنوك السعودية">
+          <option value="SNB">البنك الأهلي SNB</option>
+          <option value="RAJHI">بنك الراجحي</option>
+          <option value="RIYAD">بنك الرياض</option>
+          <option value="FRANSI">البنك الفرنسي</option>
+          <option value="INMA">بنك الإنماء</option>
+          <option value="ANB">البنك العربي الوطني</option>
+          <option value="SABB">بنك ساب</option>
+          <option value="JAZIRA">بنك الجزيرة</option>
+          <option value="BILAD">بنك البلاد</option>
+          <option value="GIB">بنك الخليج الدولي</option>
+        </optgroup>
+        <optgroup label="🌍 بنوك دولية">
+          <option value="SWIFT">SWIFT دولي</option>
+          <option value="IBAN">IBAN محلي</option>
+          <option value="CITIBANK">سيتي بنك</option>
+          <option value="HSBC">HSBC</option>
+          <option value="JP_MORGAN">JP Morgan</option>
+          <option value="BARCLAYS">باركليز</option>
+          <option value="DEUTSCHE">دويتشه بنك</option>
+          <option value="BNP">BNP Paribas</option>
+        </optgroup>
+        <optgroup label="📱 محافظ رقمية">
+          <option value="SADAD">سداد SADAD</option>
+          <option value="URPAY">UrPay</option>
+          <option value="TABBY">تابي Tabby</option>
+          <option value="TAMARA">تمارا Tamara</option>
+          <option value="PAYPAL">PayPal</option>
+          <option value="STRIPE">Stripe</option>
+        </optgroup>
+        <optgroup label="📄 أخرى">
+          <option value="CHEQUE">شيك</option>
+          <option value="CREDIT">آجل</option>
+          <option value="OTHER">أخرى</option>
+        </optgroup>
+      </select>
+    </div>
     <button onclick="addItem()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text2);font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;width:100%;margin-bottom:10px">+ إضافة بند</button>
     <div class="totals-box">
       <div class="total-row"><span>قبل الضريبة</span><span id="subtotal-display">0.00 ر.س</span></div>
@@ -366,9 +416,18 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
     <div class="form-group"><label class="form-label">المبلغ</label><input class="form-input" id="exp-amount" type="number"></div>
     <div class="form-group"><label class="form-label">الفئة</label>
       <select class="form-input" id="exp-cat">
-        <option value="RENT">إيجار</option><option value="UTILITIES">مرافق</option>
-        <option value="SALARIES">رواتب</option><option value="MARKETING">تسويق</option>
-        <option value="MAINTENANCE">صيانة</option><option value="OTHER">أخرى</option>
+        <option value="RENT">إيجار</option>
+        <option value="UTILITIES">مرافق (كهرباء/ماء/إنترنت)</option>
+        <option value="SALARIES">رواتب وأجور</option>
+        <option value="MARKETING">تسويق وإعلان</option>
+        <option value="MAINTENANCE">صيانة وإصلاح</option>
+        <option value="TRANSPORT">نقل وشحن</option>
+        <option value="INSURANCE">تأمين</option>
+        <option value="GOVERNMENT">رسوم حكومية</option>
+        <option value="BANK_FEES">رسوم بنكية</option>
+        <option value="ZAKAT">زكاة وضريبة</option>
+        <option value="GOSI">تأمينات اجتماعية GOSI</option>
+        <option value="OTHER">أخرى</option>
       </select>
     </div>
     <button class="btn-primary" onclick="saveExpense()" style="margin-bottom:8px">💾 حفظ</button>
@@ -1050,10 +1109,18 @@ async function printInvoice(id) {
   <table><thead><tr><th>#</th><th>الوصف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>
   ${items.map((item,i)=>`<tr><td>${i+1}</td><td>${item.name}</td><td>${item.quantity}</td><td style="direction:ltr">${Number(item.unitPrice||0).toFixed(2)} ر.س</td><td style="direction:ltr">${Number(item.total||0).toFixed(2)} ر.س</td></tr>`).join('')}
   </tbody></table>
+  ${inv.paymentMethod ? `<div style="background:#f8fafc;border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px"><strong>طريقة الدفع:</strong> ${inv.paymentMethod}</div>` : ''}
   <div class="total-box"><div class="tr"><span>المجموع قبل الضريبة</span><span>${Number(inv.subtotal||0).toFixed(2)} ر.س</span></div>
   <div class="tr" style="color:#e02424"><span>ضريبة 15%</span><span>${Number(inv.vatAmount||0).toFixed(2)} ر.س</span></div>
   <div class="tr"><span>الإجمالي المستحق</span><span>${Number(inv.total||0).toFixed(2)} ر.س</span></div></div>
-  <div class="footer">⚡ FastFlow ERP | فاتورة ضريبية متوافقة مع ZATCA | ${new Date().toLocaleDateString('ar-SA')}</div>
+  ${inv.qrCode ? `<div style="text-align:center;margin:16px 0"><img src="${inv.qrCode}" style="width:120px;height:120px"><br><small style="color:#64748b">رمز QR - ZATCA</small></div>` : ''}
+  <div class="footer">
+    ⚡ FastFlow ERP | فاتورة ضريبية متوافقة مع ZATCA<br>
+    <small style="font-size:9px;color:#94a3b8">
+      متوافق مع: هيئة الزكاة والضريبة والجمارك (ZATCA) | هيئة الاتصالات وتقنية المعلومات | نظام حماية الأجور (WPS)
+    </small><br>
+    <small style="font-size:9px;color:#64748b">${new Date().toLocaleDateString('ar-SA')}</small>
+  </div>
   <script>window.onload=()=>{window.print()}<\/script>
 <!-- EDIT INVOICE MODAL -->
 <div class="modal" id="edit-invoice-modal">
@@ -1077,10 +1144,48 @@ async function printInvoice(id) {
       <label class="form-label">طريقة الدفع</label>
       <select class="form-input" id="edit-inv-payment">
         <option value="">اختر...</option>
-        <option value="CASH">نقدي</option>
-        <option value="BANK_TRANSFER">تحويل بنكي</option>
-        <option value="CARD">بطاقة</option>
-        <option value="CHEQUE">شيك</option>
+        <optgroup label="💵 نقدي">
+          <option value="CASH">نقدي</option>
+        </optgroup>
+        <optgroup label="💳 بطاقات">
+          <option value="MADA">مدى MADA</option>
+          <option value="VISA">فيزا VISA</option>
+          <option value="MASTERCARD">ماستركارد</option>
+          <option value="AMEX">أمريكان إكسبريس</option>
+          <option value="APPLE_PAY">Apple Pay</option>
+          <option value="GOOGLE_PAY">Google Pay</option>
+          <option value="STC_PAY">STC Pay</option>
+        </optgroup>
+        <optgroup label="🏦 تحويل بنكي — البنوك السعودية">
+          <option value="SNB">البنك الأهلي السعودي (SNB)</option>
+          <option value="RAJHI">بنك الراجحي</option>
+          <option value="RIYAD">بنك الرياض</option>
+          <option value="FRANSI">البنك السعودي الفرنسي</option>
+          <option value="INMA">بنك الإنماء</option>
+          <option value="ANB">البنك العربي الوطني</option>
+          <option value="SABB">بنك ساب (HSBC)</option>
+          <option value="JAZIRA">بنك الجزيرة</option>
+          <option value="BILAD">بنك البلاد</option>
+          <option value="GIB">بنك الخليج الدولي</option>
+          <option value="ALINMA">بنك الأنماء</option>
+          <option value="SIB">البنك السعودي للاستثمار</option>
+        </optgroup>
+        <optgroup label="🌍 تحويل دولي">
+          <option value="SWIFT">SWIFT تحويل دولي</option>
+          <option value="IBAN">IBAN تحويل محلي</option>
+        </optgroup>
+        <optgroup label="📱 منصات الدفع">
+          <option value="SADAD">سداد SADAD</option>
+          <option value="URPAY">UrPay</option>
+          <option value="TABBY">تابي Tabby</option>
+          <option value="TAMARA">تمارا Tamara</option>
+        </optgroup>
+        <optgroup label="📄 أخرى">
+          <option value="CHEQUE">شيك</option>
+          <option value="POSTDATED_CHEQUE">شيك آجل</option>
+          <option value="CREDIT">آجل/ائتمان</option>
+          <option value="OTHER">أخرى</option>
+        </optgroup>
       </select>
     </div>
     <div class="form-group">
@@ -1146,7 +1251,8 @@ async function saveInvoice() {
   if (!items.length) { alert('يرجى إضافة بند'); return; }
   const vat = sub*0.15;
   const total = sub+vat;
-  const inv = { id:'local_'+Date.now(), clientName, clientVat:document.getElementById('inv-vat').value, items, subtotal:sub, vatAmount:vat, total, status:'DRAFT', invoiceNumber:'DRAFT-'+Date.now(), issueDate:new Date().toISOString(), _pending:true };
+  const paymentMethod = document.getElementById('inv-payment-method')?.value || '';
+  const inv = { id:'local_'+Date.now(), clientName, clientVat:document.getElementById('inv-vat').value, items, subtotal:sub, vatAmount:vat, total, paymentMethod, status:'DRAFT', invoiceNumber:'DRAFT-'+Date.now(), issueDate:new Date().toISOString(), _pending:true };
   await dbPut('invoices', inv);
   if (isOnline && TOKEN) {
     try {
@@ -1346,10 +1452,48 @@ document.addEventListener('click', e => {
       <label class="form-label">طريقة الدفع</label>
       <select class="form-input" id="edit-inv-payment">
         <option value="">اختر...</option>
-        <option value="CASH">نقدي</option>
-        <option value="BANK_TRANSFER">تحويل بنكي</option>
-        <option value="CARD">بطاقة</option>
-        <option value="CHEQUE">شيك</option>
+        <optgroup label="💵 نقدي">
+          <option value="CASH">نقدي</option>
+        </optgroup>
+        <optgroup label="💳 بطاقات">
+          <option value="MADA">مدى MADA</option>
+          <option value="VISA">فيزا VISA</option>
+          <option value="MASTERCARD">ماستركارد</option>
+          <option value="AMEX">أمريكان إكسبريس</option>
+          <option value="APPLE_PAY">Apple Pay</option>
+          <option value="GOOGLE_PAY">Google Pay</option>
+          <option value="STC_PAY">STC Pay</option>
+        </optgroup>
+        <optgroup label="🏦 تحويل بنكي — البنوك السعودية">
+          <option value="SNB">البنك الأهلي السعودي (SNB)</option>
+          <option value="RAJHI">بنك الراجحي</option>
+          <option value="RIYAD">بنك الرياض</option>
+          <option value="FRANSI">البنك السعودي الفرنسي</option>
+          <option value="INMA">بنك الإنماء</option>
+          <option value="ANB">البنك العربي الوطني</option>
+          <option value="SABB">بنك ساب (HSBC)</option>
+          <option value="JAZIRA">بنك الجزيرة</option>
+          <option value="BILAD">بنك البلاد</option>
+          <option value="GIB">بنك الخليج الدولي</option>
+          <option value="ALINMA">بنك الأنماء</option>
+          <option value="SIB">البنك السعودي للاستثمار</option>
+        </optgroup>
+        <optgroup label="🌍 تحويل دولي">
+          <option value="SWIFT">SWIFT تحويل دولي</option>
+          <option value="IBAN">IBAN تحويل محلي</option>
+        </optgroup>
+        <optgroup label="📱 منصات الدفع">
+          <option value="SADAD">سداد SADAD</option>
+          <option value="URPAY">UrPay</option>
+          <option value="TABBY">تابي Tabby</option>
+          <option value="TAMARA">تمارا Tamara</option>
+        </optgroup>
+        <optgroup label="📄 أخرى">
+          <option value="CHEQUE">شيك</option>
+          <option value="POSTDATED_CHEQUE">شيك آجل</option>
+          <option value="CREDIT">آجل/ائتمان</option>
+          <option value="OTHER">أخرى</option>
+        </optgroup>
       </select>
     </div>
     <div class="form-group">
