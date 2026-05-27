@@ -1078,7 +1078,7 @@ async function viewInvoice(id) {
       <button onclick="printInvoice('${inv.id}')" class="btn-primary">🖨️ طباعة</button>
       <button onclick="shareInvoice('${inv.id}')" class="btn-secondary">📤 مشاركة</button>
     </div>
-    ${inv.status !== 'PAID' ? `
+    ${true ? `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <button onclick="editInvoice('${inv.id}')" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:12px;color:var(--blue);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">✏️ تعديل</button>
       <button onclick="deleteInvoice('${inv.id}')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px;color:var(--red);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">🗑️ حذف</button>
