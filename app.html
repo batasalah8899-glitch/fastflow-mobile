@@ -1522,40 +1522,6 @@ async function editInvoice(id) {
   if (inv.dueDate) document.getElementById('edit-inv-duedate').value = new Date(inv.dueDate).toISOString().split('T')[0];
   openModal('edit-invoice-modal');
 }
-async function updateInvoice() {
-  const id = document.getElementById('edit-inv-id').value;
-  const status = document.getElementById('edit-inv-status').value;
-  const paymentMethod = document.getElementById('edit-inv-payment').value;
-  const notes = document.getElementById('edit-inv-notes').value;
-  const dueDate = document.getElementById('edit-inv-duedate').value;
-  try {
-    if (isOnline && TOKEN) {
-      const data = await apiCall('/invoices/' + id, { method: 'PUT', body: JSON.stringify({ status, paymentMethod, notes, dueDate: dueDate || undefined }) });
-      if (data.success) { await dbPut('invoices', { ...data.data }); closeModal('edit-invoice-modal'); alert('✅ تم التعديل!'); showPage('invoices'); return; }
-      else { alert('❌ ' + (data.error || 'حدث خطأ')); return; }
-    }
-    const invoices = await dbGetAll('invoices');
-    const inv = invoices.find(i => i.id === id);
-    if (inv) { await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate }); closeModal('edit-invoice-modal'); alert('✅ تم التعديل'); showPage('invoices'); }
-  } catch(e) { alert('❌ ' + e.message); }
-}
-async function deleteInvoice(id) {
-  if (!confirm('هل أنت متأكد من الحذف؟')) return;
-  try {
-    if (isOnline && TOKEN) {
-      const data = await apiCall('/invoices/' + id, { method: 'DELETE' });
-      if (data.success) { const tx = db.transaction('invoices','readwrite'); tx.objectStore('invoices').delete(id); alert('✅ تم الحذف!'); showPage('invoices'); return; }
-      else { alert('❌ ' + (data.error || 'لا يمكن الحذف')); return; }
-    }
-    const tx = db.transaction('invoices','readwrite');
-    tx.objectStore('invoices').delete(id);
-    alert('✅ تم الحذف');
-    showPage('invoices');
-  } catch(e) { alert('❌ ' + e.message); }
-}
-</script>
-<script>
-// Override deleteInvoice with PIN support
 async function deleteInvoice(id) {
   if (!confirm('هل أنت متأكد من الحذف؟')) return;
   try {
