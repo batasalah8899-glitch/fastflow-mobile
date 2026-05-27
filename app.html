@@ -1527,6 +1527,14 @@ async function deleteInvoice(id) {
   try {
     const invoices = await dbGetAll('invoices');
     const inv = invoices.find(i => i.id === id);
+    // Local invoice - delete directly
+    if (id.startsWith('local_') || !isOnline) {
+      const tx = db.transaction('invoices','readwrite');
+      tx.objectStore('invoices').delete(id);
+      alert('✅ تم الحذف!');
+      showPage('invoices');
+      return;
+    }
     const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
     let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
     if (inv && inv.status === 'PAID') {
