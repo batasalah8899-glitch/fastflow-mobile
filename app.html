@@ -1528,7 +1528,7 @@ async function deleteInvoice(id) {
     const invoices = await dbGetAll('invoices');
     const inv = invoices.find(i => i.id === id);
     // Local invoice - delete directly
-    if (id.startsWith('local_') || !isOnline) {
+    if (id.startsWith('local_')) {
       const tx = db.transaction('invoices','readwrite');
       tx.objectStore('invoices').delete(id);
       alert('✅ تم الحذف!');
@@ -1567,10 +1567,21 @@ async function updateInvoice() {
   try {
     const invoices = await dbGetAll('invoices');
     const inv = invoices.find(i => i.id === id);
-    if (!inv) { alert('❌ الفاتورة غير موجودة'); return; }
+    if (!inv) {
+      alert('❌ الفاتورة غير موجودة');
+      return;
+    }
+    // Always update local DB first
+    await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate });
+    if (id.startsWith('local_') || !isOnline) {
+      closeModal('edit-invoice-modal');
+      alert('✅ تم التعديل!');
+      showPage('invoices');
+      return;
+    }
 
     // Local invoice - update directly
-    if (id.startsWith('local_') || !isOnline) {
+    if (id.startsWith('local_')) {
       await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate });
       closeModal('edit-invoice-modal');
       alert('✅ تم التعديل!');
