@@ -1567,6 +1567,47 @@ async function updateInvoice() {
   try {
     const invoices = await dbGetAll('invoices');
     const inv = invoices.find(i => i.id === id);
+    if (!inv) { alert('❌ الفاتورة غير موجودة'); return; }
+
+    // Local invoice - update directly
+    if (id.startsWith('local_') || !isOnline) {
+      await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate });
+      closeModal('edit-invoice-modal');
+      alert('✅ تم التعديل!');
+      showPage('invoices');
+      return;
+    }
+
+    const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
+    let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
+    if (inv.status === 'PAID') {
+      const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
+      if (!pin) return;
+      headers['x-admin-pin'] = pin;
+    }
+    const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, {
+      method: 'PUT', headers,
+      body: JSON.stringify({ status, paymentMethod, notes, dueDate: dueDate || undefined })
+    });
+    const data = await res.json();
+    if (data.success) {
+      await dbPut('invoices', { ...data.data });
+      closeModal('edit-invoice-modal');
+      alert('✅ تم التعديل!');
+      showPage('invoices');
+    } else {
+      alert('❌ ' + (data.error || 'حدث خطأ'));
+    }
+  } catch(e) { alert('❌ ' + e.message); }
+}
+  const id = document.getElementById('edit-inv-id').value;
+  const status = document.getElementById('edit-inv-status').value;
+  const paymentMethod = document.getElementById('edit-inv-payment') ? document.getElementById('edit-inv-payment').value : '';
+  const notes = document.getElementById('edit-inv-notes').value;
+  const dueDate = document.getElementById('edit-inv-duedate').value;
+  try {
+    const invoices = await dbGetAll('invoices');
+    const inv = invoices.find(i => i.id === id);
     const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
     let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
     if (inv && inv.status === 'PAID') {
