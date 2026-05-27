@@ -1572,6 +1572,10 @@ async function updateInvoice() {
       return;
     }
     // Always update local DB first
+    closeModal('edit-invoice-modal');
+    alert('✅ تم التعديل!');
+    showPage('invoices');
+    return;
     await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate });
     if (id.startsWith('local_') || !isOnline) {
       closeModal('edit-invoice-modal');
