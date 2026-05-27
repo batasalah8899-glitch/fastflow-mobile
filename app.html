@@ -864,7 +864,7 @@ async function loadActivities() {
 async function renderInvoices() {
   const allInvoices = await dbGetAll('invoices');
   const activeSector = localStorage.getItem('ff_sector') || 'general';
-  const invoices = allInvoices.filter(i => !i.sector || i.sector === activeSector);
+  const invoices = allInvoices.filter(i => i.sector === activeSector);
   const sorted = invoices.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   const statusMap = { PAID:{label:t('paid'),cls:'b-green'}, ISSUED:{label:t('issued'),cls:'b-blue'}, OVERDUE:{label:t('overdue'),cls:'b-red'}, DRAFT:{label:t('draft'),cls:'b-gold'} };
   document.getElementById('main-content').innerHTML = `
