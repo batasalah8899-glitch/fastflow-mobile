@@ -1554,3 +1554,65 @@ async function deleteInvoice(id) {
   } catch(e) { alert('❌ ' + e.message); }
 }
 </script>
+<script>
+// Override deleteInvoice with PIN support
+async function deleteInvoice(id) {
+  if (!confirm('هل أنت متأكد من الحذف؟')) return;
+  try {
+    const invoices = await dbGetAll('invoices');
+    const inv = invoices.find(i => i.id === id);
+    let headers = { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+    if (inv && inv.status === 'PAID') {
+      const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
+      if (!pin) return;
+      headers['x-admin-pin'] = pin;
+    }
+    if (isOnline && TOKEN) {
+      const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, { method: 'DELETE', headers });
+      const data = await res.json();
+      if (data.success) {
+        const tx = db.transaction('invoices','readwrite');
+        tx.objectStore('invoices').delete(id);
+        alert('✅ تم الحذف!');
+        showPage('invoices');
+      } else {
+        alert('❌ ' + (data.error || 'PIN غير صحيح'));
+      }
+    }
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+// Override updateInvoice with PIN support  
+async function updateInvoice() {
+  const id = document.getElementById('edit-inv-id').value;
+  const status = document.getElementById('edit-inv-status').value;
+  const paymentMethod = document.getElementById('edit-inv-payment') ? document.getElementById('edit-inv-payment').value : '';
+  const notes = document.getElementById('edit-inv-notes').value;
+  const dueDate = document.getElementById('edit-inv-duedate').value;
+  try {
+    const invoices = await dbGetAll('invoices');
+    const inv = invoices.find(i => i.id === id);
+    let headers = { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+    if (inv && inv.status === 'PAID') {
+      const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
+      if (!pin) return;
+      headers['x-admin-pin'] = pin;
+    }
+    if (isOnline && TOKEN) {
+      const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ status, paymentMethod, notes, dueDate: dueDate || undefined })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await dbPut('invoices', { ...data.data });
+        closeModal('edit-invoice-modal');
+        alert('✅ تم التعديل!');
+        showPage('invoices');
+      } else {
+        alert('❌ ' + (data.error || 'PIN غير صحيح'));
+      }
+    }
+  } catch(e) { alert('❌ ' + e.message); }
+}
+</script>
