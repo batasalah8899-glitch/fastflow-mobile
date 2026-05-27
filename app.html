@@ -862,7 +862,9 @@ async function loadActivities() {
 // PAGES
 // ════════════════════════════════════════
 async function renderInvoices() {
-  const invoices = await dbGetAll('invoices');
+  const allInvoices = await dbGetAll('invoices');
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
+  const invoices = allInvoices.filter(i => !i.sector || i.sector === activeSector);
   const sorted = invoices.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   const statusMap = { PAID:{label:t('paid'),cls:'b-green'}, ISSUED:{label:t('issued'),cls:'b-blue'}, OVERDUE:{label:t('overdue'),cls:'b-red'}, DRAFT:{label:t('draft'),cls:'b-gold'} };
   document.getElementById('main-content').innerHTML = `
@@ -1078,11 +1080,11 @@ async function viewInvoice(id) {
       <button onclick="printInvoice('${inv.id}')" class="btn-primary">🖨️ طباعة</button>
       <button onclick="shareInvoice('${inv.id}')" class="btn-secondary">📤 مشاركة</button>
     </div>
-
+    ${true ? `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <button onclick="editInvoice('${inv.id}')" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:12px;color:var(--blue);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">✏️ تعديل</button>
       <button onclick="deleteInvoice('${inv.id}')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px;color:var(--red);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">🗑️ حذف</button>
-    </div>
+    </div>` : ''}
     <button onclick="showPage('invoices')" class="btn-secondary">← رجوع</button>`;
 }
 
@@ -1252,9 +1254,10 @@ async function saveInvoice() {
   const vat = sub*0.15;
   const total = sub+vat;
   const paymentMethod = document.getElementById('inv-payment-method')?.value || '';
-  const inv = { id:'local_'+Date.now(), clientName, clientVat:document.getElementById('inv-vat').value, items, subtotal:sub, vatAmount:vat, total, paymentMethod, status:'DRAFT', invoiceNumber:'DRAFT-'+Date.now(), issueDate:new Date().toISOString(), _pending:true };
+  const currentSector = localStorage.getItem('ff_sector') || 'general';
+  const inv = { id:'local_'+Date.now(), sector: currentSector, clientName, clientVat:document.getElementById('inv-vat').value, items, subtotal:sub, vatAmount:vat, total, paymentMethod, status:'DRAFT', invoiceNumber:'DRAFT-'+Date.now(), issueDate:new Date().toISOString(), _pending:true };
   await dbPut('invoices', inv);
-  if (isOnline && currentToken) {
+  if (isOnline && TOKEN) {
     try {
       const data = await apiCall('/invoices', { method:'POST', body:JSON.stringify({clientName, clientVat:inv.clientVat, items, subtotal:sub, vatAmount:vat, total, issueDate:new Date(), dueDate:new Date(Date.now()+30*86400000)}) });
       if (data.success) await dbPut('invoices', {...data.data, _pending:false});
@@ -1510,141 +1513,3 @@ document.addEventListener('click', e => {
 </div>
 </body>
 </html>
-<script>
-async function editInvoice(id) {
-  const invoices = await dbGetAll('invoices');
-  const inv = invoices.find(i => i.id === id);
-  if (!inv) return alert('الفاتورة غير موجودة');
-  document.getElementById('edit-inv-id').value = id;
-  document.getElementById('edit-inv-status').value = inv.status || 'ISSUED';
-  document.getElementById('edit-inv-payment').value = inv.paymentMethod || '';
-  document.getElementById('edit-inv-notes').value = inv.notes || '';
-  if (inv.dueDate) document.getElementById('edit-inv-duedate').value = new Date(inv.dueDate).toISOString().split('T')[0];
-  openModal('edit-invoice-modal');
-}
-async function deleteInvoice(id) {
-  if (!confirm('هل أنت متأكد من الحذف؟')) return;
-  try {
-    const invoices = await dbGetAll('invoices');
-    const inv = invoices.find(i => i.id === id);
-    // Local invoice - delete directly
-    if (id.startsWith('local_')) {
-      const tx = db.transaction('invoices','readwrite');
-      tx.objectStore('invoices').delete(id);
-      alert('✅ تم الحذف!');
-      showPage('invoices');
-      return;
-    }
-    const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
-    let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
-    if (inv && inv.status === 'PAID') {
-      const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
-      if (!pin) return;
-      headers['x-admin-pin'] = pin;
-    }
-    if (isOnline && currentToken) {
-      const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, { method: 'DELETE', headers });
-      const data = await res.json();
-      if (data.success) {
-        const tx = db.transaction('invoices','readwrite');
-        tx.objectStore('invoices').delete(id);
-        alert('✅ تم الحذف!');
-        showPage('invoices');
-      } else {
-        alert('❌ ' + (data.error || 'PIN غير صحيح'));
-      }
-    }
-  } catch(e) { alert('❌ ' + e.message); }
-}
-
-// Override updateInvoice with PIN support  
-async function updateInvoice() {
-  const id = document.getElementById('edit-inv-id').value;
-  const status = document.getElementById('edit-inv-status').value;
-  const paymentMethod = document.getElementById('edit-inv-payment') ? document.getElementById('edit-inv-payment').value : '';
-  const notes = document.getElementById('edit-inv-notes').value;
-  const dueDate = document.getElementById('edit-inv-duedate').value;
-  try {
-    const invoices = await dbGetAll('invoices');
-    const inv = invoices.find(i => i.id === id);
-    if (!inv) {
-      alert('❌ الفاتورة غير موجودة');
-      return;
-    }
-    // Always update local DB first
-    closeModal('edit-invoice-modal');
-    alert('✅ تم التعديل!');
-    showPage('invoices');
-    return;
-    await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate });
-    if (id.startsWith('local_') || !isOnline) {
-      closeModal('edit-invoice-modal');
-      alert('✅ تم التعديل!');
-      showPage('invoices');
-      return;
-    }
-
-    // Local invoice - update directly
-    if (id.startsWith('local_')) {
-      await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate });
-      closeModal('edit-invoice-modal');
-      alert('✅ تم التعديل!');
-      showPage('invoices');
-      return;
-    }
-
-    const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
-    let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
-    if (inv.status === 'PAID') {
-      const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
-      if (!pin) return;
-      headers['x-admin-pin'] = pin;
-    }
-    const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, {
-      method: 'PUT', headers,
-      body: JSON.stringify({ status, paymentMethod, notes, dueDate: dueDate || undefined })
-    });
-    const data = await res.json();
-    if (data.success) {
-      await dbPut('invoices', { ...data.data });
-      closeModal('edit-invoice-modal');
-      alert('✅ تم التعديل!');
-      showPage('invoices');
-    } else {
-      alert('❌ ' + (data.error || 'حدث خطأ'));
-    }
-  } catch(e) { alert('❌ ' + e.message); }
-}
-  const id = document.getElementById('edit-inv-id').value;
-  const status = document.getElementById('edit-inv-status').value;
-  const paymentMethod = document.getElementById('edit-inv-payment') ? document.getElementById('edit-inv-payment').value : '';
-  const notes = document.getElementById('edit-inv-notes').value;
-  const dueDate = document.getElementById('edit-inv-duedate').value;
-  try {
-    const invoices = await dbGetAll('invoices');
-    const inv = invoices.find(i => i.id === id);
-    const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
-    let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
-    if (inv && inv.status === 'PAID') {
-      const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
-      if (!pin) return;
-      headers['x-admin-pin'] = pin;
-    }
-    if (isOnline && currentToken) {
-      const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, {
-        method: 'PUT', headers,
-        body: JSON.stringify({ status, paymentMethod, notes, dueDate: dueDate || undefined })
-      });
-      const data = await res.json();
-      if (data.success) {
-        await dbPut('invoices', { ...data.data });
-        closeModal('edit-invoice-modal');
-        alert('✅ تم التعديل!');
-        showPage('invoices');
-      } else {
-        alert('❌ ' + (data.error || 'PIN غير صحيح'));
-      }
-    }
-  } catch(e) { alert('❌ ' + e.message); }
-}
-</script>
