@@ -1254,7 +1254,7 @@ async function saveInvoice() {
   const paymentMethod = document.getElementById('inv-payment-method')?.value || '';
   const inv = { id:'local_'+Date.now(), clientName, clientVat:document.getElementById('inv-vat').value, items, subtotal:sub, vatAmount:vat, total, paymentMethod, status:'DRAFT', invoiceNumber:'DRAFT-'+Date.now(), issueDate:new Date().toISOString(), _pending:true };
   await dbPut('invoices', inv);
-  if (isOnline && TOKEN) {
+  if (isOnline && currentToken) {
     try {
       const data = await apiCall('/invoices', { method:'POST', body:JSON.stringify({clientName, clientVat:inv.clientVat, items, subtotal:sub, vatAmount:vat, total, issueDate:new Date(), dueDate:new Date(Date.now()+30*86400000)}) });
       if (data.success) await dbPut('invoices', {...data.data, _pending:false});
@@ -1527,13 +1527,14 @@ async function deleteInvoice(id) {
   try {
     const invoices = await dbGetAll('invoices');
     const inv = invoices.find(i => i.id === id);
-    let headers = { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+    const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
+    let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
     if (inv && inv.status === 'PAID') {
       const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
       if (!pin) return;
       headers['x-admin-pin'] = pin;
     }
-    if (isOnline && TOKEN) {
+    if (isOnline && currentToken) {
       const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, { method: 'DELETE', headers });
       const data = await res.json();
       if (data.success) {
@@ -1558,13 +1559,14 @@ async function updateInvoice() {
   try {
     const invoices = await dbGetAll('invoices');
     const inv = invoices.find(i => i.id === id);
-    let headers = { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+    const currentToken = TOKEN || localStorage.getItem('ff_token') || '';
+    let headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
     if (inv && inv.status === 'PAID') {
       const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
       if (!pin) return;
       headers['x-admin-pin'] = pin;
     }
-    if (isOnline && TOKEN) {
+    if (isOnline && currentToken) {
       const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, {
         method: 'PUT', headers,
         body: JSON.stringify({ status, paymentMethod, notes, dueDate: dueDate || undefined })
