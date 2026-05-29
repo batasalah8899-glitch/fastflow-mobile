@@ -153,6 +153,10 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
 .page-title { font-size:18px; font-weight:900; }
 .page-sub { font-size:11px; color:var(--text3); margin-top:2px; }
 .loading { text-align:center; padding:40px; color:var(--text3); font-size:13px; }
+.lang-globe-btn { text-align:center; padding:8px 4px; border-radius:10px; cursor:pointer; border:1.5px solid var(--border); background:var(--bg3); font-size:18px; transition:all 0.2s; }
+.lang-globe-btn span { font-size:10px; color:var(--text2); display:block; margin-top:2px; }
+.lang-globe-btn:hover { border-color:var(--primary); background:rgba(240,180,41,0.1); }
+.lang-globe-btn.active { border-color:var(--primary); background:rgba(240,180,41,0.15); }
 </style>
 </head>
 <body>
@@ -168,18 +172,27 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
       <div class="login-title">FastFlow ERP</div>
       <div class="login-sub" id="login-sub-text">نظام المحاسبة السحابي المتكامل</div>
     </div>
-    <!-- Language Bar -->
-    <div class="lang-bar" id="login-lang-bar">
-      <span class="lang-pill active" onclick="setLoginLang('ar')">🇸🇦 ع</span>
-      <span class="lang-pill" onclick="setLoginLang('en')">🇺🇸 En</span>
-      <span class="lang-pill" onclick="setLoginLang('ur')">🇵🇰 اردو</span>
-      <span class="lang-pill" onclick="setLoginLang('hi')">🇮🇳 हि</span>
-      <span class="lang-pill" onclick="setLoginLang('bn')">🇧🇩 বা</span>
-      <span class="lang-pill" onclick="setLoginLang('tl')">🇵🇭 Fil</span>
-      <span class="lang-pill" onclick="setLoginLang('id')">🇮🇩 Id</span>
-      <span class="lang-pill" onclick="setLoginLang('fr')">🇫🇷 Fr</span>
-      <span class="lang-pill" onclick="setLoginLang('tr')">🇹🇷 Tr</span>
-      <span class="lang-pill" onclick="setLoginLang('zh')">🇨🇳 中</span>
+    <!-- Globe Language Selector -->
+    <div style="margin-bottom:20px">
+      <div onclick="toggleLangPicker()" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 16px">
+        <span style="font-size:20px" id="login-globe">🌍</span>
+        <span style="font-size:13px;color:var(--text2)" id="login-lang-name">اختر اللغة</span>
+        <span style="font-size:10px;color:var(--text3)">▼</span>
+      </div>
+      <div id="lang-picker" style="display:none;margin-top:8px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+          <div onclick="setLoginLang('ar')" class="lang-globe-btn" data-code="ar">🇸🇦<br><span>ع</span></div>
+          <div onclick="setLoginLang('en')" class="lang-globe-btn" data-code="en">🇺🇸<br><span>En</span></div>
+          <div onclick="setLoginLang('ur')" class="lang-globe-btn" data-code="ur">🇵🇰<br><span>اردو</span></div>
+          <div onclick="setLoginLang('hi')" class="lang-globe-btn" data-code="hi">🇮🇳<br><span>हि</span></div>
+          <div onclick="setLoginLang('bn')" class="lang-globe-btn" data-code="bn">🇧🇩<br><span>বা</span></div>
+          <div onclick="setLoginLang('tl')" class="lang-globe-btn" data-code="tl">🇵🇭<br><span>Fil</span></div>
+          <div onclick="setLoginLang('id')" class="lang-globe-btn" data-code="id">🇮🇩<br><span>Id</span></div>
+          <div onclick="setLoginLang('fr')" class="lang-globe-btn" data-code="fr">🇫🇷<br><span>Fr</span></div>
+          <div onclick="setLoginLang('tr')" class="lang-globe-btn" data-code="tr">🇹🇷<br><span>Tr</span></div>
+          <div onclick="setLoginLang('zh')" class="lang-globe-btn" data-code="zh">🇨🇳<br><span>中</span></div>
+        </div>
+      </div>
     </div>
     <div class="error-msg" id="login-error"></div>
     <div class="form-group">
@@ -569,6 +582,11 @@ function applyTheme(theme) {
 // ════════════════════════════════════════
 // LANGUAGE
 // ════════════════════════════════════════
+function toggleLangPicker() {
+  const picker = document.getElementById('lang-picker');
+  if (picker) picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+}
+
 function setLoginLang(lang) {
   currentLang = lang;
   localStorage.setItem('ff_lang', lang);
@@ -576,17 +594,36 @@ function setLoginLang(lang) {
   document.documentElement.lang = lang;
   document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
   document.body.dir = isRTL ? 'rtl' : 'ltr';
+  
+  // Update globe display
+  const flags = {ar:'🇸🇦',en:'🇺🇸',ur:'🇵🇰',hi:'🇮🇳',bn:'🇧🇩',tl:'🇵🇭',id:'🇮🇩',fr:'🇫🇷',tr:'🇹🇷',zh:'🇨🇳'};
+  const names = {ar:'العربية',en:'English',ur:'اردو',hi:'हिंदी',bn:'বাংলা',tl:'Filipino',id:'Indonesia',fr:'Français',tr:'Türkçe',zh:'中文'};
+  const globe = document.getElementById('login-globe');
+  const langName = document.getElementById('login-lang-name');
+  if (globe) globe.textContent = flags[lang] || '🌍';
+  if (langName) langName.textContent = names[lang] || lang;
+  
+  // Update active state
+  document.querySelectorAll('.lang-globe-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-code') === lang);
+  });
+  
+  // Close picker
+  const picker = document.getElementById('lang-picker');
+  if (picker) picker.style.display = 'none';
+  
   // Update login labels
-  document.getElementById('lbl-username').textContent = t('username');
-  document.getElementById('lbl-password').textContent = t('password');
-  document.getElementById('btn-login').textContent = t('login');
-  document.getElementById('no-account-text').textContent = t('no_account');
-  document.getElementById('register-link').textContent = t('register');
-  document.getElementById('sector-title') && (document.getElementById('sector-title').textContent = t('choose_sector'));
-  // Update active pill
-  document.querySelectorAll('.lang-pill').forEach(p => p.classList.remove('active'));
-  event?.currentTarget?.classList.add('active');
-  // Update nav
+  if (document.getElementById('lbl-username')) {
+    document.getElementById('lbl-username').textContent = t('username');
+    document.getElementById('lbl-password').textContent = t('password');
+    document.getElementById('btn-login').textContent = t('login');
+    document.getElementById('no-account-text').textContent = t('no_account');
+    document.getElementById('register-link').textContent = t('register');
+  }
+  if (document.getElementById('sector-title')) {
+    document.getElementById('sector-title').textContent = t('choose_sector');
+    document.getElementById('sector-sub').textContent = t('sector_sub');
+  }
   updateNavLabels();
 }
 
@@ -1652,10 +1689,15 @@ document.addEventListener('click', e => {
 
   await initDB();
 
-  // Mark active language pill
-  document.querySelectorAll('.lang-pill').forEach(p => {
-    if (p.getAttribute('onclick')?.includes(`'${currentLang}'`)) p.classList.add('active');
-    else p.classList.remove('active');
+  // Set globe on load
+  const flags = {ar:'🇸🇦',en:'🇺🇸',ur:'🇵🇰',hi:'🇮🇳',bn:'🇧🇩',tl:'🇵🇭',id:'🇮🇩',fr:'🇫🇷',tr:'🇹🇷',zh:'🇨🇳'};
+  const names = {ar:'العربية',en:'English',ur:'اردو',hi:'हिंदी',bn:'বাংলা',tl:'Filipino',id:'Indonesia',fr:'Français',tr:'Türkçe',zh:'中文'};
+  const globe = document.getElementById('login-globe');
+  const langName = document.getElementById('login-lang-name');
+  if (globe) globe.textContent = flags[currentLang] || '🌍';
+  if (langName) langName.textContent = names[currentLang] || currentLang;
+  document.querySelectorAll('.lang-globe-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-code') === currentLang);
   });
 })();
 
