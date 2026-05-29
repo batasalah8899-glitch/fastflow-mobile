@@ -292,12 +292,12 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
   </div>
 
   <div class="more-menu" id="more-menu">
-    <div class="more-item" onclick="showPage('products');toggleMore()"><span class="more-icon">📦</span><span>المنتجات</span></div>
-    <div class="more-item" onclick="showPage('reports');toggleMore()"><span class="more-icon">📈</span><span>التقارير</span></div>
-    <div class="more-item" onclick="showPage('accounts');toggleMore()"><span class="more-icon">🌳</span><span>الحسابات</span></div>
-    <div class="more-item" onclick="showPage('employees');toggleMore()"><span class="more-icon">👤</span><span>الموظفون</span></div>
-    <div class="more-item" onclick="showPage('settings');toggleMore()"><span class="more-icon">⚙️</span><span>الإعدادات</span></div>
-    <div class="more-item" onclick="doLogout()"><span class="more-icon">🚪</span><span style="color:var(--red)">خروج</span></div>
+    <div class="more-item" onclick="showPage('products');toggleMore()"><span class="more-icon">📦</span><span id="more-lbl-products">المنتجات</span></div>
+    <div class="more-item" onclick="showPage('reports');toggleMore()"><span class="more-icon">📈</span><span id="more-lbl-reports">التقارير</span></div>
+    <div class="more-item" onclick="showPage('accounts');toggleMore()"><span class="more-icon">🌳</span><span id="more-lbl-accounts">الحسابات</span></div>
+    <div class="more-item" onclick="showPage('employees');toggleMore()"><span class="more-icon">👤</span><span id="more-lbl-employees">الموظفون</span></div>
+    <div class="more-item" onclick="showPage('settings');toggleMore()"><span class="more-icon">⚙️</span><span id="more-lbl-settings">الإعدادات</span></div>
+    <div class="more-item" onclick="doLogout()"><span class="more-icon">🚪</span><span id="more-lbl-logout" style="color:var(--red)">خروج</span></div>
   </div>
 </div>
 
@@ -479,9 +479,83 @@ const T = {
   hi: { dashboard:'डैशबोर्ड', invoices:'चालान', customers:'ग्राहक', expenses:'खर्च', products:'उत्पाद', reports:'रिपोर्ट', accounts:'खाते', employees:'कर्मचारी', settings:'सेटिंग्स', more:'अधिक', welcome:'स्वागत', revenue:'राजस्व', profit:'शुद्ध लाभ', total_inv:'कुल चालान', total_exp:'कुल खर्च', recent_inv:'हाल के चालान', view_all:'सभी देखें', activities:'हाल की गतिविधि', no_data:'कोई डेटा नहीं', loading:'लोड हो रहा है', save:'सहेजें', cancel:'रद्द', logout:'लॉगआउट', sync:'सिंक', install:'ऐप इंस्टॉल', sector:'क्षेत्र', change_sector:'क्षेत्र बदलें', language:'भाषा', theme:'थीम', screen_record:'स्क्रीन रिकॉर्ड', paid:'भुगतान', issued:'जारी', overdue:'अतिदेय', draft:'मसौदा', new_invoice:'नया चालान', new_customer:'नया ग्राहक', new_expense:'नया खर्च', login:'लॉगिन', username:'उपयोगकर्ता नाम', password:'पासवर्ड', no_account:'खाता नहीं?', register:'अभी रजिस्टर', choose_sector:'अपना क्षेत्र चुनें', skip:'छोड़ें — सामान्य' },
   fr: { dashboard:'Tableau de bord', invoices:'Factures', customers:'Clients', expenses:'Dépenses', products:'Produits', reports:'Rapports', accounts:'Comptes', employees:'Employés', settings:'Paramètres', more:'Plus', welcome:'Bienvenue', revenue:'Revenus', profit:'Bénéfice Net', total_inv:'Total Factures', total_exp:'Total Dépenses', recent_inv:'Factures Récentes', view_all:'Voir Tout', activities:'Activité Récente', no_data:'Aucune donnée', loading:'Chargement', save:'Sauvegarder', cancel:'Annuler', logout:'Déconnexion', sync:'Synchroniser', install:"Installer l'App", sector:'Secteur', change_sector:'Changer Secteur', language:'Langue', theme:'Thème', screen_record:'Enregistrer Écran', paid:'Payé', issued:'Émis', overdue:'En retard', draft:'Brouillon', new_invoice:'Nouvelle Facture', new_customer:'Nouveau Client', new_expense:'Nouvelle Dépense', login:'Connexion', username:"Nom d'utilisateur", password:'Mot de passe', no_account:'Pas de compte?', register:"S'inscrire", choose_sector:'Choisissez votre secteur', skip:'Passer — Général' },
 };
-['bn','tl','id','tr','zh'].forEach(l => T[l] = {...T.en});
+// Complete translations for all languages
+T.bn = { dashboard:'ড্যাশবোর্ড', invoices:'চালান', customers:'গ্রাহক', expenses:'খরচ', products:'পণ্য', reports:'রিপোর্ট', accounts:'হিসাব', employees:'কর্মচারী', settings:'সেটিংস', more:'আরো', welcome:'স্বাগতম', revenue:'আয়', profit:'নিট লাভ', total_inv:'মোট চালান', total_exp:'মোট খরচ', recent_inv:'সাম্প্রতিক চালান', view_all:'সব দেখুন', activities:'সাম্প্রতিক কার্যক্রম', no_data:'কোনো ডেটা নেই', loading:'লোড হচ্ছে', save:'সংরক্ষণ', cancel:'বাতিল', logout:'লগআউট', sync:'সিঙ্ক', install:'অ্যাপ ইনস্টল', sector:'সেক্টর', change_sector:'সেক্টর পরিবর্তন', language:'ভাষা', theme:'থিম', screen_record:'স্ক্রিন রেকর্ড', paid:'পরিশোধিত', issued:'জারি', overdue:'বকেয়া', draft:'খসড়া', new_invoice:'নতুন চালান', new_customer:'নতুন গ্রাহক', new_expense:'নতুন খরচ', login:'লগইন', username:'ব্যবহারকারীর নাম', password:'পাসওয়ার্ড', no_account:'অ্যাকাউন্ট নেই?', register:'নিবন্ধন করুন', choose_sector:'আপনার সেক্টর বেছে নিন', skip:'এড়িয়ে যান' };
+
+T.tl = { dashboard:'Dashboard', invoices:'Mga Invoice', customers:'Mga Customer', expenses:'Mga Gastos', products:'Mga Produkto', reports:'Mga Ulat', accounts:'Mga Account', employees:'Mga Empleyado', settings:'Mga Setting', more:'Higit Pa', welcome:'Maligayang Pagdating', revenue:'Kita', profit:'Netong Kita', total_inv:'Kabuuang Invoice', total_exp:'Kabuuang Gastos', recent_inv:'Kamakailang Invoice', view_all:'Tingnan Lahat', activities:'Kamakailang Aktibidad', no_data:'Walang Data', loading:'Naglo-load', save:'I-save', cancel:'Kanselahin', logout:'Mag-logout', sync:'I-sync', install:'I-install ang App', sector:'Sektor', change_sector:'Baguhin ang Sektor', language:'Wika', theme:'Tema', screen_record:'Screen Record', paid:'Nabayaran', issued:'Inilabas', overdue:'Overdue', draft:'Draft', new_invoice:'Bagong Invoice', new_customer:'Bagong Customer', new_expense:'Bagong Gastos', login:'Mag-login', username:'Username', password:'Password', no_account:'Walang account?', register:'Mag-register', choose_sector:'Piliin ang iyong Sektor', skip:'Laktawan' };
+
+T.id = { dashboard:'Dasbor', invoices:'Faktur', customers:'Pelanggan', expenses:'Pengeluaran', products:'Produk', reports:'Laporan', accounts:'Akun', employees:'Karyawan', settings:'Pengaturan', more:'Lainnya', welcome:'Selamat Datang', revenue:'Pendapatan', profit:'Laba Bersih', total_inv:'Total Faktur', total_exp:'Total Pengeluaran', recent_inv:'Faktur Terbaru', view_all:'Lihat Semua', activities:'Aktivitas Terbaru', no_data:'Tidak Ada Data', loading:'Memuat', save:'Simpan', cancel:'Batal', logout:'Keluar', sync:'Sinkronisasi', install:'Pasang Aplikasi', sector:'Sektor', change_sector:'Ganti Sektor', language:'Bahasa', theme:'Tema', screen_record:'Rekam Layar', paid:'Dibayar', issued:'Diterbitkan', overdue:'Jatuh Tempo', draft:'Draf', new_invoice:'Faktur Baru', new_customer:'Pelanggan Baru', new_expense:'Pengeluaran Baru', login:'Masuk', username:'Nama Pengguna', password:'Kata Sandi', no_account:'Belum punya akun?', register:'Daftar Sekarang', choose_sector:'Pilih Sektor Anda', skip:'Lewati' };
+
+T.tr = { dashboard:'Gösterge Paneli', invoices:'Faturalar', customers:'Müşteriler', expenses:'Giderler', products:'Ürünler', reports:'Raporlar', accounts:'Hesaplar', employees:'Çalışanlar', settings:'Ayarlar', more:'Daha Fazla', welcome:'Hoş Geldiniz', revenue:'Gelir', profit:'Net Kâr', total_inv:'Toplam Fatura', total_exp:'Toplam Gider', recent_inv:'Son Faturalar', view_all:'Tümünü Gör', activities:'Son Aktiviteler', no_data:'Veri Yok', loading:'Yükleniyor', save:'Kaydet', cancel:'İptal', logout:'Çıkış', sync:'Senkronize', install:'Uygulamayı Kur', sector:'Sektör', change_sector:'Sektörü Değiştir', language:'Dil', theme:'Tema', screen_record:'Ekran Kaydı', paid:'Ödendi', issued:'Verildi', overdue:'Gecikmiş', draft:'Taslak', new_invoice:'Yeni Fatura', new_customer:'Yeni Müşteri', new_expense:'Yeni Gider', login:'Giriş', username:'Kullanıcı Adı', password:'Şifre', no_account:'Hesabınız yok mu?', register:'Kayıt Ol', choose_sector:'Sektörünüzü Seçin', skip:'Atla' };
+
+T.zh = { dashboard:'仪表板', invoices:'发票', customers:'客户', expenses:'费用', products:'产品', reports:'报告', accounts:'账户', employees:'员工', settings:'设置', more:'更多', welcome:'欢迎', revenue:'收入', profit:'净利润', total_inv:'总发票', total_exp:'总费用', recent_inv:'最近发票', view_all:'查看全部', activities:'最近活动', no_data:'没有数据', loading:'加载中', save:'保存', cancel:'取消', logout:'登出', sync:'同步', install:'安装应用', sector:'行业', change_sector:'更改行业', language:'语言', theme:'主题', screen_record:'屏幕录制', paid:'已付款', issued:'已开具', overdue:'逾期', draft:'草稿', new_invoice:'新发票', new_customer:'新客户', new_expense:'新费用', login:'登录', username:'用户名', password:'密码', no_account:'没有账户？', register:'立即注册', choose_sector:'选择您的行业', skip:'跳过' };
 
 function t(key) { return (T[currentLang]||T.en)[key] || (T.en)[key] || key; }
+
+// Extra keys for complete translation
+const extraKeys = {
+  ar: {
+    new_product:'منتج جديد', add_stock:'إضافة مخزون', remove_stock:'سحب مخزون', return_stock:'مرتجع',
+    stock_movements:'حركات المخزون', low_stock:'مخزون منخفض', total_value:'قيمة المخزون',
+    current_qty:'الكمية الحالية', min_qty:'الحد الأدنى', cost_price:'سعر التكلفة', selling_price:'سعر البيع',
+    category:'الفئة', barcode:'الباركود', sku:'رمز المنتج',
+    invoice_number:'رقم الفاتورة', client:'العميل', subtotal:'قبل الضريبة', vat:'ضريبة 15%',
+    total:'الإجمالي', payment_method:'طريقة الدفع', notes:'ملاحظات', print:'طباعة', share:'مشاركة',
+    edit:'تعديل', delete:'حذف', back:'رجوع', save_changes:'حفظ التعديلات',
+    status:'الحالة', due_date:'تاريخ الاستحقاق', issue_date:'تاريخ الإصدار',
+    confirm_delete:'هل أنت متأكد من الحذف؟', deleted:'تم الحذف!', saved:'تم الحفظ!',
+    error:'حدث خطأ', no_connection:'لا يوجد اتصال', syncing:'جاري المزامنة',
+    account:'الحساب', company:'الشركة', vat_number:'الرقم الضريبي',
+    name:'الاسم', phone:'الهاتف', email:'البريد الإلكتروني',
+    amount:'المبلغ', date:'التاريخ', type:'النوع', reason:'السبب',
+    salary:'الراتب', position:'المنصب', code:'الكود',
+    assets:'أصول', liabilities:'خصوم', equity:'حقوق', revenue_acc:'إيرادات', expense_acc:'مصروفات',
+    choose_activity:'اختر قطاع نشاطك', sector_sub:'سيتم تخصيص النظام حسب قطاعك',
+    skip_general:'تخطي — عام', new_account:'حساب جديد', tax_invoice:'فاتورة ضريبية',
+    partial:'جزئية', cancelled:'ملغية', qty:'الكمية', unit_price:'سعر الوحدة',
+    add_item:'إضافة بند', issue_invoice:'إصدار الفاتورة', cancel:'إلغاء',
+    dark_mode:'الوضع الداكن', light_mode:'الوضع الفاتح', color:'اللون',
+    install_app:'تثبيت التطبيق', no_app_store:'بدون App Store',
+    connected:'متصل', disconnected:'غير متصل',
+    pending_sync:'عملية تنتظر المزامنة', pending_syncs:'عمليات تنتظر المزامنة'
+  },
+  en: {
+    new_product:'New Product', add_stock:'Add Stock', remove_stock:'Remove Stock', return_stock:'Return',
+    stock_movements:'Stock Movements', low_stock:'Low Stock', total_value:'Stock Value',
+    current_qty:'Current Qty', min_qty:'Min Qty', cost_price:'Cost Price', selling_price:'Selling Price',
+    category:'Category', barcode:'Barcode', sku:'SKU',
+    invoice_number:'Invoice Number', client:'Client', subtotal:'Subtotal', vat:'VAT 15%',
+    total:'Total', payment_method:'Payment Method', notes:'Notes', print:'Print', share:'Share',
+    edit:'Edit', delete:'Delete', back:'Back', save_changes:'Save Changes',
+    status:'Status', due_date:'Due Date', issue_date:'Issue Date',
+    confirm_delete:'Are you sure to delete?', deleted:'Deleted!', saved:'Saved!',
+    error:'Error occurred', no_connection:'No connection', syncing:'Syncing',
+    account:'Account', company:'Company', vat_number:'VAT Number',
+    name:'Name', phone:'Phone', email:'Email',
+    amount:'Amount', date:'Date', type:'Type', reason:'Reason',
+    salary:'Salary', position:'Position', code:'Code',
+    assets:'Assets', liabilities:'Liabilities', equity:'Equity', revenue_acc:'Revenue', expense_acc:'Expenses',
+    choose_activity:'Choose Your Sector', sector_sub:'System will be customized for your sector',
+    skip_general:'Skip — General', new_account:'New Account', tax_invoice:'Tax Invoice',
+    partial:'Partial', cancelled:'Cancelled', qty:'Qty', unit_price:'Unit Price',
+    add_item:'Add Item', issue_invoice:'Issue Invoice', cancel:'Cancel',
+    dark_mode:'Dark Mode', light_mode:'Light Mode', color:'Color',
+    install_app:'Install App', no_app_store:'Without App Store',
+    connected:'Connected', disconnected:'Disconnected',
+    pending_sync:'operation pending sync', pending_syncs:'operations pending sync'
+  }
+};
+
+// Copy extra keys to all languages
+Object.keys(T).forEach(lang => {
+  const extra = extraKeys[lang] || extraKeys.en;
+  Object.assign(T[lang], extra);
+});
+
+// Also copy AR extra to AR-based languages
+Object.assign(T.ar, extraKeys.ar);
+Object.assign(T.ur, extraKeys.en);
+
 
 // ════════════════════════════════════════
 // THEME
@@ -521,6 +595,18 @@ function updateNavLabels() {
     const el = document.getElementById('nav-lbl-'+p);
     if (el) el.textContent = t(p);
   });
+  // Update more menu
+  const moreLabels = {products:'المنتجات',reports:'التقارير',accounts:'الحسابات',employees:'الموظفون',settings:'الإعدادات',logout:'خروج'};
+  const moreKeys = {products:'products',reports:'reports',accounts:'accounts',employees:'employees',settings:'settings',logout:'logout'};
+  Object.keys(moreLabels).forEach(k => {
+    const el = document.getElementById('more-lbl-'+k);
+    if (el) el.textContent = t(k) || moreLabels[k];
+  });
+  // Update topbar sector
+  const sectorName = localStorage.getItem('ff_sector_name') || t('sector');
+  const sectorIcon = localStorage.getItem('ff_sector_icon') || '🏢';
+  const topbarSector = document.getElementById('topbar-sector');
+  if (topbarSector) topbarSector.textContent = sectorIcon + ' ' + sectorName;
 }
 
 function changeLang(lang) {
@@ -1123,13 +1209,29 @@ function renderSettings() {
     </div>
 
     <div id="tab-lang" style="display:none">
-      <div class="list-card">
-        ${[['ar','🇸🇦','العربية','Arabic'],['en','🇺🇸','English','English'],['ur','🇵🇰','اردو','Urdu'],['hi','🇮🇳','हिंदी','Hindi'],['bn','🇧🇩','বাংলা','Bengali'],['tl','🇵🇭','Filipino','Filipino'],['id','🇮🇩','Indonesia','Indonesian'],['fr','🇫🇷','Français','French'],['tr','🇹🇷','Türkçe','Turkish'],['zh','🇨🇳','中文','Chinese']].map(([code,flag,name,en])=>`
-          <div class="list-item" onclick="changeLang('${code}')" style="cursor:pointer">
-            <div class="list-avatar" style="font-size:24px;background:var(--bg3)">${flag}</div>
-            <div class="list-info"><div class="list-name">${name}</div><div class="list-sub">${en}</div></div>
-            ${currentLang===code?'<span style="color:var(--green);font-size:18px">✓</span>':''}
+      <!-- Globe Header -->
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="width:64px;height:64px;background:linear-gradient(135deg,#1e3a5f,#0d1f3c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 8px;border:2px solid var(--primary);box-shadow:0 0 20px rgba(240,180,41,0.2)">🌍</div>
+        <div style="font-size:14px;font-weight:700;color:var(--primary)">اختر لغة النظام</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">كل النصوص ستتغير فوراً</div>
+      </div>
+      <!-- Language Grid -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
+        ${[['ar','🇸🇦','ع'],['en','🇺🇸','En'],['ur','🇵🇰','اردو'],['hi','🇮🇳','हि'],['bn','🇧🇩','বা'],['tl','🇵🇭','Fil'],['id','🇮🇩','Id'],['fr','🇫🇷','Fr'],['tr','🇹🇷','Tr'],['zh','🇨🇳','中']].map(([code,flag,short])=>`
+          <div onclick="changeLang('\${code}')" style="background:\${currentLang===code?'rgba(240,180,41,0.15)':'var(--bg2)'};border:2px solid \${currentLang===code?'var(--primary)':'var(--border)'};border-radius:12px;padding:10px 4px;cursor:pointer;text-align:center;transition:all 0.2s;position:relative">
+            \${currentLang===code?'<div style="position:absolute;top:3px;right:3px;width:8px;height:8px;background:var(--green);border-radius:50%"></div>':''}
+            <div style="font-size:22px;margin-bottom:3px">\${flag}</div>
+            <div style="font-size:10px;font-weight:700;color:\${currentLang===code?'var(--primary)':'var(--text2)'}">\${short}</div>
           </div>`).join('')}
+      </div>
+      <!-- Current Language Info -->
+      <div style="background:rgba(240,180,41,0.08);border:1px solid rgba(240,180,41,0.2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+        <div style="font-size:24px">\${{ar:'🇸🇦',en:'🇺🇸',ur:'🇵🇰',hi:'🇮🇳',bn:'🇧🇩',tl:'🇵🇭',id:'🇮🇩',fr:'🇫🇷',tr:'🇹🇷',zh:'🇨🇳'}[currentLang]||'🌍'}</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--primary)">\${{ar:'العربية',en:'English',ur:'اردو',hi:'हिंदी',bn:'বাংলা',tl:'Filipino',id:'Indonesia',fr:'Français',tr:'Türkçe',zh:'中文'}[currentLang]||currentLang}</div>
+          <div style="font-size:10px;color:var(--text3)">اللغة الحالية — Current Language</div>
+        </div>
+        <div style="margin-right:auto"><span style="color:var(--green);font-size:18px">✓</span></div>
       </div>
     </div>
 
@@ -1219,213 +1321,107 @@ async function printInvoice(id) {
   const inv = invoices.find(i => i.id === id);
   if (!inv) return;
   const items = inv.items || [];
+  const companyName = (USER && USER.company && USER.company.nameAr) ? USER.company.nameAr : 'FastFlow ERP';
+  const vatNumber = (USER && USER.company && USER.company.vatNumber) ? USER.company.vatNumber : '';
+  const crNumber = (USER && USER.company && USER.company.crNumber) ? USER.company.crNumber : '';
+  const sectorName = localStorage.getItem('ff_sector_name') || '';
+  const sectorIcon = localStorage.getItem('ff_sector_icon') || '';
+  
+  let itemsHTML = '';
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    itemsHTML += '<tr>';
+    itemsHTML += '<td style="color:#94a3b8;padding:8px 12px">' + (i+1) + '</td>';
+    itemsHTML += '<td style="font-weight:600;padding:8px 12px">' + (item.name||'') + '</td>';
+    itemsHTML += '<td style="text-align:center;padding:8px 12px">' + (item.quantity||0) + '</td>';
+    itemsHTML += '<td style="direction:ltr;text-align:left;padding:8px 12px">' + Number(item.unitPrice||0).toFixed(2) + ' ر.س</td>';
+    itemsHTML += '<td style="text-align:center;color:#e02424;padding:8px 12px">' + (item.vatRate||15) + '%</td>';
+    itemsHTML += '<td style="direction:ltr;text-align:left;font-weight:700;color:#1e3a5f;padding:8px 12px">' + Number(item.total||0).toFixed(2) + ' ر.س</td>';
+    itemsHTML += '</tr>';
+  }
+
+  const statusText = inv.status === 'PAID' ? '✅ مدفوعة' : inv.status === 'ISSUED' ? '📤 مُصدرة' : '📝 مسودة';
+  const statusColor = inv.status === 'PAID' ? '#10b981' : inv.status === 'ISSUED' ? '#3b82f6' : '#94a3b8';
+  const issueDate = inv.issueDate ? new Date(inv.issueDate).toLocaleDateString('ar-SA', {year:'numeric',month:'long',day:'numeric'}) : '';
+  const dueDate = inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('ar-SA') : '-';
+  const watermark = inv.status === 'PAID' ? '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:80px;color:rgba(16,185,129,0.06);font-weight:900;pointer-events:none;z-index:0">مدفوعة</div>' : '';
+
+  const html = '<!DOCTYPE html>' +
+    '<html lang="ar" dir="rtl"><head><meta charset="UTF-8">' +
+    '<title>فاتورة - ' + (inv.invoiceNumber||'draft') + '</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">' +
+    '<style>' +
+    '* { margin:0; padding:0; box-sizing:border-box; }' +
+    'body { font-family:Cairo,sans-serif; direction:rtl; background:#fff; color:#111; }' +
+    '.page { max-width:800px; margin:0 auto; padding:30px; }' +
+    '.header { background:linear-gradient(135deg,#1e3a5f,#0d1f3c); color:white; padding:24px 28px; border-radius:12px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; }' +
+    '.logo-box { width:52px; height:52px; background:linear-gradient(135deg,#f0b429,#e09b1a); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:26px; margin-left:14px; }' +
+    '.company-name { font-size:20px; font-weight:900; color:#f0b429; }' +
+    '.company-sub { font-size:11px; color:rgba(255,255,255,0.6); margin-top:3px; }' +
+    '.inv-number { font-size:18px; font-weight:900; color:#f0b429; text-align:left; }' +
+    '.section { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px 18px; margin-bottom:14px; }' +
+    '.section-title { font-size:10px; color:#94a3b8; font-weight:700; margin-bottom:8px; letter-spacing:1px; text-transform:uppercase; }' +
+    '.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }' +
+    '.info-item label { font-size:10px; color:#94a3b8; display:block; margin-bottom:2px; }' +
+    '.info-item span { font-size:13px; font-weight:600; color:#1e293b; }' +
+    'table { width:100%; border-collapse:collapse; margin-bottom:14px; }' +
+    'thead tr { background:#1e3a5f; color:white; }' +
+    'th { padding:9px 12px; font-size:11px; font-weight:700; text-align:right; }' +
+    'tbody tr { border-bottom:1px solid #f1f5f9; }' +
+    'tbody tr:nth-child(even) { background:#f8fafc; }' +
+    '.totals { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px 18px; margin-bottom:14px; }' +
+    '.total-row { display:flex; justify-content:space-between; padding:5px 0; font-size:12px; border-bottom:1px solid #e2e8f0; }' +
+    '.total-row:last-child { border-bottom:none; font-size:15px; font-weight:900; color:#1e3a5f; padding-top:8px; }' +
+    '.footer { text-align:center; border-top:2px solid #e2e8f0; padding-top:14px; margin-top:14px; }' +
+    '.no-print { text-align:center; margin-top:20px; }' +
+    '@media print { .no-print { display:none; } }' +
+    '</style></head><body>' +
+    watermark +
+    '<div class="page">' +
+    '<div class="header">' +
+    '<div style="display:flex;align-items:center">' +
+    '<div class="logo-box">' + (sectorIcon||'⚡') + '</div>' +
+    '<div><div class="company-name">' + companyName + '</div>' +
+    '<div class="company-sub">' + sectorName + ' | FastFlow ERP</div>' +
+    (vatNumber ? '<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px">الرقم الضريبي: ' + vatNumber + '</div>' : '') +
+    '</div></div>' +
+    '<div style="text-align:left">' +
+    '<div class="inv-number">' + (inv.invoiceNumber||'DRAFT') + '</div>' +
+    '<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:4px">📅 ' + issueDate + '</div>' +
+    '<div style="margin-top:6px"><span style="background:' + statusColor + '22;color:' + statusColor + ';border:1px solid ' + statusColor + ';padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700">' + statusText + '</span></div>' +
+    '</div></div>' +
+    '<div class="section"><div class="section-title">بيانات العميل</div>' +
+    '<div class="info-grid">' +
+    '<div class="info-item"><label>اسم العميل</label><span>' + (inv.clientName||'-') + '</span></div>' +
+    (inv.clientVat ? '<div class="info-item"><label>الرقم الضريبي</label><span>' + inv.clientVat + '</span></div>' : '') +
+    '<div class="info-item"><label>تاريخ الإصدار</label><span>' + issueDate + '</span></div>' +
+    '<div class="info-item"><label>تاريخ الاستحقاق</label><span>' + dueDate + '</span></div>' +
+    '</div></div>' +
+    '<table><thead><tr><th>#</th><th>الوصف</th><th>الكمية</th><th>سعر الوحدة</th><th>الضريبة</th><th>الإجمالي</th></tr></thead>' +
+    '<tbody>' + itemsHTML + '</tbody></table>' +
+    '<div class="totals">' +
+    '<div class="total-row"><span>المجموع قبل الضريبة</span><span style="direction:ltr">' + Number(inv.subtotal||0).toFixed(2) + ' ر.س</span></div>' +
+    '<div class="total-row" style="color:#e02424"><span>ضريبة القيمة المضافة 15%</span><span style="direction:ltr">+ ' + Number(inv.vatAmount||0).toFixed(2) + ' ر.س</span></div>' +
+    '<div class="total-row"><span>الإجمالي المستحق</span><span style="direction:ltr">' + Number(inv.total||0).toFixed(2) + ' ر.س</span></div>' +
+    '</div>' +
+    (inv.paymentMethod ? '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px">💳 طريقة الدفع: ' + inv.paymentMethod + '</div>' : '') +
+    (inv.notes ? '<div class="section"><div class="section-title">ملاحظات</div><div style="font-size:12px;color:#374151">' + inv.notes + '</div></div>' : '') +
+    (inv.qrCode ? '<div style="text-align:center;margin:14px 0"><img src="' + inv.qrCode + '" style="width:120px;height:120px;border:2px solid #e2e8f0;border-radius:10px;padding:6px"><br><small style="color:#94a3b8;font-size:10px">رمز QR — ZATCA</small></div>' : '') +
+    '<div class="footer">' +
+    '<div style="font-size:16px;font-weight:900;color:#1e3a5f;margin-bottom:4px">⚡ FastFlow ERP</div>' +
+    '<div style="font-size:10px;color:#94a3b8;line-height:1.8">فاتورة ضريبية متوافقة مع هيئة الزكاة والضريبة والجمارك (ZATCA)<br>' +
+    (vatNumber ? 'الرقم الضريبي: ' + vatNumber + ' | ' : '') + (crNumber ? 'السجل التجاري: ' + crNumber : '') + '<br>' +
+    '<span style="color:#10b981">✓ ZATCA Phase 1</span> | <span style="color:#3b82f6">✓ E-Invoice</span> | <span style="color:#f0b429">✓ QR Code</span>' +
+    '</div></div>' +
+    '<div class="no-print">' +
+    '<button onclick="window.print()" style="background:#1e3a5f;color:white;border:none;border-radius:10px;padding:12px 28px;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-left:10px">🖨️ طباعة</button>' +
+    '<button onclick="window.close()" style="background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;border-radius:10px;padding:12px 28px;font-family:Cairo,sans-serif;font-size:14px;cursor:pointer">✕ إغلاق</button>' +
+    '</div></div>' +
+    '<scr' + 'ipt>setTimeout(function(){window.print()},800)<' + '/scr' + 'ipt>' +
+    '</body></html>';
+
   const w = window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>فاتورة - ${inv.invoiceNumber||'draft'}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Cairo,sans-serif;direction:rtl;padding:20px;color:#000}
-  .header{background:#1e3a5f;color:white;padding:20px;border-radius:10px;margin-bottom:14px;display:flex;justify-content:space-between}
-  .title{font-size:22px;font-weight:900;color:#f0b429}.inv-num{font-size:16px;font-weight:900;color:#f0b429}
-  table{width:100%;border-collapse:collapse;margin-bottom:12px}th{background:#1e3a5f;color:white;padding:8px 10px;font-size:12px;text-align:right}
-  td{padding:8px 10px;font-size:11px;border-bottom:1px solid #e5e7eb}.total-box{background:#f8fafc;border-radius:8px;padding:12px}
-  .tr{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #e5e7eb}
-  .tr:last-child{border-bottom:none;font-weight:900;font-size:14px;color:#1e3a5f}
-  .footer{text-align:center;font-size:10px;color:#64748b;margin-top:16px;border-top:1px solid #e5e7eb;padding-top:10px}
-  @media print{body{padding:10px}}</style></head><body>
-  <div class="header"><div><div class="title">⚡ FastFlow ERP</div><div style="font-size:11px;opacity:0.8">نظام المحاسبة السحابي</div></div>
-  <div style="text-align:left"><div class="inv-num">${inv.invoiceNumber||'draft'}</div><div style="font-size:11px;opacity:0.8">${inv.issueDate?new Date(inv.issueDate).toLocaleDateString('ar-SA'):new Date().toLocaleDateString('ar-SA')}</div></div></div>
-  <div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:13px;font-weight:700">👤 ${inv.clientName||'-'}</div>${inv.clientVat?`<div style="font-size:11px;color:#64748b">الرقم الضريبي: ${inv.clientVat}</div>`:''}</div>
-  <table><thead><tr><th>#</th><th>الوصف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>
-  ${items.map((item,i)=>`<tr><td>${i+1}</td><td>${item.name}</td><td>${item.quantity}</td><td style="direction:ltr">${Number(item.unitPrice||0).toFixed(2)} ر.س</td><td style="direction:ltr">${Number(item.total||0).toFixed(2)} ر.س</td></tr>`).join('')}
-  </tbody></table>
-  ${inv.paymentMethod ? `<div style="background:#f8fafc;border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px"><strong>طريقة الدفع:</strong> ${inv.paymentMethod}</div>` : ''}
-  <div class="total-box"><div class="tr"><span>المجموع قبل الضريبة</span><span>${Number(inv.subtotal||0).toFixed(2)} ر.س</span></div>
-  <div class="tr" style="color:#e02424"><span>ضريبة 15%</span><span>${Number(inv.vatAmount||0).toFixed(2)} ر.س</span></div>
-  <div class="tr"><span>الإجمالي المستحق</span><span>${Number(inv.total||0).toFixed(2)} ر.س</span></div></div>
-  ${inv.qrCode ? `<div style="text-align:center;margin:16px 0"><img src="${inv.qrCode}" style="width:120px;height:120px"><br><small style="color:#64748b">رمز QR - ZATCA</small></div>` : ''}
-  <div class="footer">
-    ⚡ FastFlow ERP | فاتورة ضريبية متوافقة مع ZATCA<br>
-    <small style="font-size:9px;color:#94a3b8">
-      متوافق مع: هيئة الزكاة والضريبة والجمارك (ZATCA) | هيئة الاتصالات وتقنية المعلومات | نظام حماية الأجور (WPS)
-    </small><br>
-    <small style="font-size:9px;color:#64748b">${new Date().toLocaleDateString('ar-SA')}</small>
-  </div>
-  <script>window.onload=()=>{window.print()}<\/script>
-
-<!-- STOCK MOVEMENT MODAL -->
-<div class="modal" id="stock-modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <div class="modal-title" id="stock-modal-title">➕ إضافة مخزون</div>
-      <div class="modal-close" onclick="closeModal('stock-modal')">✕</div>
-    </div>
-    <input type="hidden" id="stock-product-id">
-    <input type="hidden" id="stock-type">
-    <div class="form-group">
-      <label class="form-label">الكمية</label>
-      <input class="form-input" id="stock-qty" type="number" min="0.01" step="0.01" placeholder="0">
-    </div>
-    <div class="form-group">
-      <label class="form-label">سعر الوحدة (اختياري)</label>
-      <input class="form-input" id="stock-cost" type="number" min="0" step="0.01" placeholder="0">
-    </div>
-    <div class="form-group">
-      <label class="form-label">السبب / المرجع</label>
-      <input class="form-input" id="stock-reason" type="text" placeholder="مثال: شراء من المورد">
-    </div>
-    <button class="btn-primary" onclick="saveStockMovement()" style="margin-bottom:8px">💾 حفظ</button>
-    <button class="btn-secondary" onclick="closeModal('stock-modal')">إلغاء</button>
-  </div>
-</div>
-
-
-<!-- EDIT PRODUCT MODAL -->
-<div class="modal" id="edit-product-modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <div class="modal-title">✏️ تعديل المنتج</div>
-      <div class="modal-close" onclick="closeModal('edit-product-modal')">✕</div>
-    </div>
-    <input type="hidden" id="edit-prod-id">
-    <div class="form-group"><label class="form-label">اسم المنتج</label><input class="form-input" id="edit-prod-name" type="text"></div>
-    <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku" type="text"></div>
-    <div class="form-group"><label class="form-label">الباركود</label><input class="form-input" id="edit-prod-barcode" type="text"></div>
-    <div class="form-group"><label class="form-label">الفئة</label><input class="form-input" id="edit-prod-category" type="text"></div>
-    <div class="form-group"><label class="form-label">سعر التكلفة</label><input class="form-input" id="edit-prod-cost" type="number"></div>
-    <div class="form-group"><label class="form-label">سعر البيع</label><input class="form-input" id="edit-prod-price" type="number"></div>
-    <div class="form-group"><label class="form-label">الحد الأدنى للمخزون</label><input class="form-input" id="edit-prod-min" type="number"></div>
-    <button class="btn-primary" onclick="saveEditProduct()" style="margin-bottom:8px">💾 حفظ</button>
-    <button class="btn-secondary" onclick="closeModal('edit-product-modal')">إلغاء</button>
-  </div>
-</div>
-
-</body></html>\`);
-  w.document.close();
-}
-  <div class="modal-content">
-    <div class="modal-header">
-      <div class="modal-title">✏️ تعديل الفاتورة</div>
-      <div class="modal-close" onclick="closeModal('edit-invoice-modal')">✕</div>
-    </div>
-    <input type="hidden" id="edit-inv-id">
-    <div class="form-group">
-      <label class="form-label">الحالة</label>
-      <select class="form-input" id="edit-inv-status">
-        <option value="ISSUED">مُصدرة</option>
-        <option value="PAID">مدفوعة</option>
-        <option value="PARTIAL">جزئية</option>
-        <option value="OVERDUE">متأخرة</option>
-        <option value="CANCELLED">ملغية</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">طريقة الدفع</label>
-      <select class="form-input" id="edit-inv-payment">
-        <option value="">اختر...</option>
-        <optgroup label="💵 نقدي">
-          <option value="CASH">نقدي</option>
-        </optgroup>
-        <optgroup label="💳 بطاقات">
-          <option value="MADA">مدى MADA</option>
-          <option value="VISA">فيزا VISA</option>
-          <option value="MASTERCARD">ماستركارد</option>
-          <option value="AMEX">أمريكان إكسبريس</option>
-          <option value="APPLE_PAY">Apple Pay</option>
-          <option value="GOOGLE_PAY">Google Pay</option>
-          <option value="STC_PAY">STC Pay</option>
-        </optgroup>
-        <optgroup label="🏦 تحويل بنكي — البنوك السعودية">
-          <option value="SNB">البنك الأهلي السعودي (SNB)</option>
-          <option value="RAJHI">بنك الراجحي</option>
-          <option value="RIYAD">بنك الرياض</option>
-          <option value="FRANSI">البنك السعودي الفرنسي</option>
-          <option value="INMA">بنك الإنماء</option>
-          <option value="ANB">البنك العربي الوطني</option>
-          <option value="SABB">بنك ساب (HSBC)</option>
-          <option value="JAZIRA">بنك الجزيرة</option>
-          <option value="BILAD">بنك البلاد</option>
-          <option value="GIB">بنك الخليج الدولي</option>
-          <option value="ALINMA">بنك الأنماء</option>
-          <option value="SIB">البنك السعودي للاستثمار</option>
-        </optgroup>
-        <optgroup label="🌍 تحويل دولي">
-          <option value="SWIFT">SWIFT تحويل دولي</option>
-          <option value="IBAN">IBAN تحويل محلي</option>
-        </optgroup>
-        <optgroup label="📱 منصات الدفع">
-          <option value="SADAD">سداد SADAD</option>
-          <option value="URPAY">UrPay</option>
-          <option value="TABBY">تابي Tabby</option>
-          <option value="TAMARA">تمارا Tamara</option>
-        </optgroup>
-        <optgroup label="📄 أخرى">
-          <option value="CHEQUE">شيك</option>
-          <option value="POSTDATED_CHEQUE">شيك آجل</option>
-          <option value="CREDIT">آجل/ائتمان</option>
-          <option value="OTHER">أخرى</option>
-        </optgroup>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">تاريخ الاستحقاق</label>
-      <input class="form-input" id="edit-inv-duedate" type="date">
-    </div>
-    <div class="form-group">
-      <label class="form-label">ملاحظات</label>
-      <input class="form-input" id="edit-inv-notes" type="text" placeholder="ملاحظات إضافية">
-    </div>
-    <button class="btn-primary" onclick="updateInvoice()" style="margin-bottom:8px">💾 حفظ التعديلات</button>
-    <button class="btn-secondary" onclick="closeModal('edit-invoice-modal')">إلغاء</button>
-  </div>
-</div>
-
-<!-- STOCK MOVEMENT MODAL -->
-<div class="modal" id="stock-modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <div class="modal-title" id="stock-modal-title">➕ إضافة مخزون</div>
-      <div class="modal-close" onclick="closeModal('stock-modal')">✕</div>
-    </div>
-    <input type="hidden" id="stock-product-id">
-    <input type="hidden" id="stock-type">
-    <div class="form-group">
-      <label class="form-label">الكمية</label>
-      <input class="form-input" id="stock-qty" type="number" min="0.01" step="0.01" placeholder="0">
-    </div>
-    <div class="form-group">
-      <label class="form-label">سعر الوحدة (اختياري)</label>
-      <input class="form-input" id="stock-cost" type="number" min="0" step="0.01" placeholder="0">
-    </div>
-    <div class="form-group">
-      <label class="form-label">السبب / المرجع</label>
-      <input class="form-input" id="stock-reason" type="text" placeholder="مثال: شراء من المورد">
-    </div>
-    <button class="btn-primary" onclick="saveStockMovement()" style="margin-bottom:8px">💾 حفظ</button>
-    <button class="btn-secondary" onclick="closeModal('stock-modal')">إلغاء</button>
-  </div>
-</div>
-
-
-<!-- EDIT PRODUCT MODAL -->
-<div class="modal" id="edit-product-modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <div class="modal-title">✏️ تعديل المنتج</div>
-      <div class="modal-close" onclick="closeModal('edit-product-modal')">✕</div>
-    </div>
-    <input type="hidden" id="edit-prod-id">
-    <div class="form-group"><label class="form-label">اسم المنتج</label><input class="form-input" id="edit-prod-name" type="text"></div>
-    <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku" type="text"></div>
-    <div class="form-group"><label class="form-label">الباركود</label><input class="form-input" id="edit-prod-barcode" type="text"></div>
-    <div class="form-group"><label class="form-label">الفئة</label><input class="form-input" id="edit-prod-category" type="text"></div>
-    <div class="form-group"><label class="form-label">سعر التكلفة</label><input class="form-input" id="edit-prod-cost" type="number"></div>
-    <div class="form-group"><label class="form-label">سعر البيع</label><input class="form-input" id="edit-prod-price" type="number"></div>
-    <div class="form-group"><label class="form-label">الحد الأدنى للمخزون</label><input class="form-input" id="edit-prod-min" type="number"></div>
-    <button class="btn-primary" onclick="saveEditProduct()" style="margin-bottom:8px">💾 حفظ</button>
-    <button class="btn-secondary" onclick="closeModal('edit-product-modal')">إلغاء</button>
-  </div>
-</div>
-
-</body></html>`);
+  w.document.write(html);
   w.document.close();
 }
 
