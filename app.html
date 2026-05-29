@@ -951,9 +951,10 @@ async function viewProduct(id) {
       <div class="stat-card"><div class="stat-icon">🏷️</div><div class="stat-value" style="color:var(--blue);font-size:14px">${Number(p.costPrice||0).toLocaleString()}</div><div class="stat-label">سعر التكلفة</div></div>
       <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-value" style="color:var(--red)">${p.minQuantity||5}</div><div class="stat-label">الحد الأدنى</div></div>
     </div>
-    <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <button onclick="showAddStock('${p.id}','IN')" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:14px;color:var(--green);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">➕ إضافة مخزون</button>
-      <button onclick="showAddStock('${p.id}','OUT')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;color:var(--red);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">➖ سحب مخزون</button>
+    <div class="grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+      <button onclick="showAddStock('${p.id}','IN')" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px;color:var(--green);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer">➕ إضافة</button>
+      <button onclick="showAddStock('${p.id}','OUT')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px;color:var(--red);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer">➖ سحب</button>
+      <button onclick="showAddStock('${p.id}','RETURN')" style="background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);border-radius:10px;padding:12px;color:var(--primary);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer">↩️ مرتجع</button>
     </div>
     <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
       <button onclick="editProduct('${p.id}')" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:14px;color:var(--blue);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">✏️ تعديل</button>
@@ -965,7 +966,8 @@ async function viewProduct(id) {
 function showAddStock(productId, type) {
   document.getElementById('stock-product-id').value = productId;
   document.getElementById('stock-type').value = type;
-  document.getElementById('stock-modal-title').textContent = type === 'IN' ? '➕ إضافة مخزون' : '➖ سحب مخزون';
+  const titles = { 'IN': '➕ إضافة مخزون', 'OUT': '➖ سحب مخزون', 'RETURN': '↩️ مرتجع إلى المخزون' };
+  document.getElementById('stock-modal-title').textContent = titles[type] || type;
   openModal('stock-modal');
 }
 
@@ -987,7 +989,7 @@ async function saveStockMovement() {
         const products = await dbGetAll('products');
         const p = products.find(x => x.id === productId);
         if (p) {
-          const newQty = type === 'IN' ? (p.quantity||0) + quantity : (p.quantity||0) - quantity;
+          const newQty = (type === 'IN' || type === 'RETURN') ? (p.quantity||0) + quantity : (p.quantity||0) - quantity;
           await dbPut('products', { ...p, quantity: newQty });
         }
         closeModal('stock-modal');
@@ -1003,7 +1005,7 @@ async function saveStockMovement() {
     const products = await dbGetAll('products');
     const p = products.find(x => x.id === productId);
     if (p) {
-      const newQty = type === 'IN' ? (p.quantity||0) + quantity : (p.quantity||0) - quantity;
+      const newQty = (type === 'IN' || type === 'RETURN') ? (p.quantity||0) + quantity : (p.quantity||0) - quantity;
       await dbPut('products', { ...p, quantity: newQty });
     }
     closeModal('stock-modal');
