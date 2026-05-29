@@ -555,22 +555,7 @@ function dbAdd(store, data) { return new Promise(r => { const t = db.transaction
 // ════════════════════════════════════════
 // SECURITY - Auto logout on close/hide
 // ════════════════════════════════════════
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && TOKEN) {
-    // Clear session on hide for security
-    TOKEN = null;
-    USER = null;
-    localStorage.removeItem('ff_token');
-    localStorage.removeItem('ff_user');
-  }
-});
-
-window.addEventListener('beforeunload', () => {
-  TOKEN = null;
-  USER = null;
-  localStorage.removeItem('ff_token');
-  localStorage.removeItem('ff_user');
-});
+// Session persists across tabs - removed auto-logout on hide
 
 // ════════════════════════════════════════
 // ONLINE/OFFLINE
@@ -607,6 +592,8 @@ async function doLogin() {
     if (data.success) {
       TOKEN = data.data.token;
       USER = data.data.user;
+      localStorage.setItem('ff_token', TOKEN);
+      localStorage.setItem('ff_user', JSON.stringify(USER));
       await dbPut('settings', { key: 'credentials', value: { username, password } });
       await loadAllData();
       const savedSector = localStorage.getItem('ff_sector');
@@ -650,6 +637,8 @@ async function doRegister() {
     if (data.success) {
       TOKEN = data.data.token;
       USER = data.data.user;
+      localStorage.setItem('ff_token', TOKEN);
+      localStorage.setItem('ff_user', JSON.stringify(USER));
       await dbPut('settings', { key: 'credentials', value: { username, password } });
       showSectorScreen();
     } else { errEl.textContent = data.error || 'حدث خطأ'; errEl.style.display = 'block'; }
@@ -803,7 +792,9 @@ async function syncNow() {
 // DASHBOARD
 // ════════════════════════════════════════
 async function renderDashboard() {
-  const [invoices, expenses, pending] = await Promise.all([dbGetAll('invoices'), dbGetAll('expenses'), dbGetAll('pending')]);
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
+  const [allInv, expenses, pending] = await Promise.all([dbGetAll('invoices'), dbGetAll('expenses'), dbGetAll('pending')]);
+  const invoices = allInv.filter(i => i.sector === activeSector);
   const revenue = invoices.reduce((s,i) => s+Number(i.total||0), 0);
   const totalExp = expenses.reduce((s,e) => s+Number(e.amount||0), 0);
   const profit = revenue - totalExp;
@@ -864,7 +855,7 @@ async function loadActivities() {
 async function renderInvoices() {
   const allInvoices = await dbGetAll('invoices');
   const activeSector = localStorage.getItem('ff_sector') || 'general';
-  const invoices = allInvoices.filter(i => i.sector === activeSector);
+  const invoices = allInvoices.filter(i => !i.sector || i.sector === activeSector);
   const sorted = invoices.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   const statusMap = { PAID:{label:t('paid'),cls:'b-green'}, ISSUED:{label:t('issued'),cls:'b-blue'}, OVERDUE:{label:t('overdue'),cls:'b-red'}, DRAFT:{label:t('draft'),cls:'b-gold'} };
   document.getElementById('main-content').innerHTML = `
@@ -910,17 +901,151 @@ async function renderExpenses() {
 }
 
 async function renderProducts() {
-  const products = await dbGetAll('products');
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
+  const allProducts = await dbGetAll('products');
+  const products = allProducts.filter(p => !p.sector || p.sector === activeSector);
+  const lowStock = products.filter(p => p.quantity <= (p.minQuantity || 5));
+  const totalValue = products.reduce((s,p) => s + (p.quantity * (p.costPrice||0)), 0);
   document.getElementById('main-content').innerHTML = `
-    <div class="section-title"><span>📦 ${t('products')} (${products.length})</span><span class="section-more" onclick="openModal('product-modal')">+</span></div>
+    <div class="stat-grid" style="margin-bottom:12px">
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" style="color:var(--blue)">${products.length}</div><div class="stat-label">إجمالي المنتجات</div></div>
+      <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-value" style="color:var(--red)">${lowStock.length}</div><div class="stat-label">مخزون منخفض</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" style="color:var(--green);font-size:13px">${totalValue.toLocaleString()}</div><div class="stat-label">قيمة المخزون</div></div>
+      <div class="stat-card" onclick="showStockMovements()" style="cursor:pointer"><div class="stat-icon">📊</div><div class="stat-value" style="color:var(--primary);font-size:13px">الحركات</div><div class="stat-label">سجل المخزون</div></div>
+    </div>
+    ${lowStock.length>0?`<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--red)">⚠️ ${lowStock.length} منتج مخزونه منخفض: ${lowStock.map(p=>p.name).join('، ')}</div>`:''}
+    <div class="section-title"><span>📦 المنتجات (${products.length})</span><span class="section-more" onclick="openModal('product-modal')">+ منتج</span></div>
     <div class="list-card">
-      ${products.length===0?`<div class="empty-state"><div class="empty-icon">📦</div><div>${t('no_data')}</div></div>`
-        :products.map(p=>`<div class="list-item">
-          <div class="list-avatar" style="background:rgba(139,92,246,0.1)">📦</div>
-          <div class="list-info"><div class="list-name">${p.name}</div><div class="list-sub">${p.quantity||0} • ${p.barcode||''}</div></div>
-          <div class="list-amount">${Number(p.sellingPrice||0).toLocaleString()}</div>
+      ${products.length===0?`<div class="empty-state"><div class="empty-icon">📦</div><div>لا توجد منتجات</div></div>`
+        :products.map(p=>`<div class="list-item" onclick="viewProduct('${p.id}')">
+          <div class="list-avatar" style="background:${p.quantity<=(p.minQuantity||5)?'rgba(239,68,68,0.1)':'rgba(139,92,246,0.1)'}">📦</div>
+          <div class="list-info">
+            <div class="list-name">${p.name}</div>
+            <div class="list-sub">${p.sku||p.barcode||''} • ${p.category||'عام'}</div>
+            <div style="margin-top:3px">
+              <span style="font-size:10px;color:${p.quantity<=(p.minQuantity||5)?'var(--red)':'var(--green)'}">
+                ${p.quantity<=(p.minQuantity||5)?'⚠️':'✅'} الكمية: ${p.quantity||0} ${p.unit||'قطعة'}
+              </span>
+            </div>
+          </div>
+          <div style="text-align:left">
+            <div class="list-amount">${Number(p.sellingPrice||0).toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text3)">تكلفة: ${Number(p.costPrice||0).toLocaleString()}</div>
+          </div>
         </div>`).join('')}
     </div>`;
+}
+
+async function viewProduct(id) {
+  const products = await dbGetAll('products');
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('main-content').innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:900;color:var(--primary);margin-bottom:4px">${p.name}</div>
+      <div style="font-size:11px;color:var(--text3)">${p.sku||''} ${p.barcode?'• باركود: '+p.barcode:''}</div>
+    </div>
+    <div class="stat-grid" style="margin-bottom:12px">
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" style="color:${p.quantity<=(p.minQuantity||5)?'var(--red)':'var(--green)'}">${p.quantity||0}</div><div class="stat-label">الكمية الحالية</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" style="color:var(--primary);font-size:14px">${Number(p.sellingPrice||0).toLocaleString()}</div><div class="stat-label">سعر البيع</div></div>
+      <div class="stat-card"><div class="stat-icon">🏷️</div><div class="stat-value" style="color:var(--blue);font-size:14px">${Number(p.costPrice||0).toLocaleString()}</div><div class="stat-label">سعر التكلفة</div></div>
+      <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-value" style="color:var(--red)">${p.minQuantity||5}</div><div class="stat-label">الحد الأدنى</div></div>
+    </div>
+    <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <button onclick="showAddStock('${p.id}','IN')" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:14px;color:var(--green);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">➕ إضافة مخزون</button>
+      <button onclick="showAddStock('${p.id}','OUT')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;color:var(--red);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">➖ سحب مخزون</button>
+    </div>
+    <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <button onclick="editProduct('${p.id}')" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:14px;color:var(--blue);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">✏️ تعديل</button>
+      <button onclick="deleteProduct('${p.id}')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px;color:var(--red);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">🗑️ حذف</button>
+    </div>
+    <button onclick="showPage('products')" class="btn-secondary">← رجوع</button>`;
+}
+
+function showAddStock(productId, type) {
+  document.getElementById('stock-product-id').value = productId;
+  document.getElementById('stock-type').value = type;
+  document.getElementById('stock-modal-title').textContent = type === 'IN' ? '➕ إضافة مخزون' : '➖ سحب مخزون';
+  openModal('stock-modal');
+}
+
+async function saveStockMovement() {
+  const productId = document.getElementById('stock-product-id').value;
+  const type = document.getElementById('stock-type').value;
+  const quantity = parseFloat(document.getElementById('stock-qty').value);
+  const unitCost = parseFloat(document.getElementById('stock-cost').value) || 0;
+  const reason = document.getElementById('stock-reason').value;
+  if (!quantity || quantity <= 0) { alert('يرجى إدخال كمية صحيحة'); return; }
+  try {
+    if (isOnline && TOKEN) {
+      const data = await apiCall('/inventory/movement', {
+        method: 'POST',
+        body: JSON.stringify({ productId, type, quantity, unitCost, reason })
+      });
+      if (data.success) {
+        // Update local
+        const products = await dbGetAll('products');
+        const p = products.find(x => x.id === productId);
+        if (p) {
+          const newQty = type === 'IN' ? (p.quantity||0) + quantity : (p.quantity||0) - quantity;
+          await dbPut('products', { ...p, quantity: newQty });
+        }
+        closeModal('stock-modal');
+        alert('✅ تم تحديث المخزون!');
+        viewProduct(productId);
+        return;
+      } else {
+        alert('❌ ' + (data.error || 'حدث خطأ'));
+        return;
+      }
+    }
+    // Offline
+    const products = await dbGetAll('products');
+    const p = products.find(x => x.id === productId);
+    if (p) {
+      const newQty = type === 'IN' ? (p.quantity||0) + quantity : (p.quantity||0) - quantity;
+      await dbPut('products', { ...p, quantity: newQty });
+    }
+    closeModal('stock-modal');
+    alert('✅ تم تحديث المخزون محلياً');
+    viewProduct(productId);
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+async function showStockMovements() {
+  document.getElementById('main-content').innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
+  try {
+    if (isOnline && TOKEN) {
+      const data = await apiCall('/inventory');
+      if (data.success) {
+        const movements = data.data.products.flatMap(p => 
+          (p.stockMovements||[]).map(m => ({...m, productName: p.name}))
+        ).sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
+        document.getElementById('main-content').innerHTML = `
+          <div class="section-title">📊 حركات المخزون (${movements.length})</div>
+          <div class="list-card">
+            ${movements.length===0?'<div class="empty-state"><div>لا توجد حركات</div></div>'
+              :movements.slice(0,50).map(m=>`<div class="list-item">
+                <div class="list-avatar" style="background:${m.type==='IN'?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)'}">
+                  ${m.type==='IN'?'📥':'📤'}
+                </div>
+                <div class="list-info">
+                  <div class="list-name">${m.productName}</div>
+                  <div class="list-sub">${m.reason||m.type} • ${m.date?new Date(m.date).toLocaleDateString():''}</div>
+                </div>
+                <div style="text-align:left">
+                  <div style="color:${m.type==='IN'?'var(--green)':'var(--red)'};font-weight:700">
+                    ${m.type==='IN'?'+':'−'}${m.quantity}
+                  </div>
+                </div>
+              </div>`).join('')}
+          </div>
+          <button onclick="showPage('products')" class="btn-secondary">← رجوع</button>`;
+        return;
+      }
+    }
+  } catch(e) {}
+  document.getElementById('main-content').innerHTML = '<div class="empty-state"><div>لا توجد بيانات</div></div>';
 }
 
 async function renderAccounts() {
@@ -1046,10 +1171,9 @@ function switchSettingsTab(tab, el) {
 // ════════════════════════════════════════
 // INVOICE VIEW & PRINT
 // ════════════════════════════════════════
-async function viewInvoice(id) 
-  const _allInv = await dbGetAll('invoices');
-  const invoices = _allInv.filter(i => i.sector === (localStorage.getItem('ff_sector') || 'general'));
-  const inv = invoices.find(i => i.id === id);
+async function viewInvoice(id) {
+  const allInvoices = await dbGetAll('invoices');
+  const inv = allInvoices.find(i => i.id === id);
   if (!inv) return;
   const statusMap = { PAID:{label:t('paid'),color:'var(--green)'}, ISSUED:{label:t('issued'),color:'var(--blue)'}, OVERDUE:{label:t('overdue'),color:'var(--red)'}, DRAFT:{label:t('draft'),color:'var(--text3)'} };
   const s = statusMap[inv.status] || {label:inv.status, color:'var(--text3)'};
@@ -1081,11 +1205,10 @@ async function viewInvoice(id)
       <button onclick="printInvoice('${inv.id}')" class="btn-primary">🖨️ طباعة</button>
       <button onclick="shareInvoice('${inv.id}')" class="btn-secondary">📤 مشاركة</button>
     </div>
-    ${true ? `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <button onclick="editInvoice('${inv.id}')" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:12px;color:var(--blue);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">✏️ تعديل</button>
       <button onclick="deleteInvoice('${inv.id}')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px;color:var(--red);font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer">🗑️ حذف</button>
-    </div>` : ''}
+    </div>
     <button onclick="showPage('invoices')" class="btn-secondary">← رجوع</button>`;
 }
 
@@ -1125,8 +1248,57 @@ async function printInvoice(id) {
     <small style="font-size:9px;color:#64748b">${new Date().toLocaleDateString('ar-SA')}</small>
   </div>
   <script>window.onload=()=>{window.print()}<\/script>
-<!-- EDIT INVOICE MODAL -->
-<div class="modal" id="edit-invoice-modal">
+
+<!-- STOCK MOVEMENT MODAL -->
+<div class="modal" id="stock-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="stock-modal-title">➕ إضافة مخزون</div>
+      <div class="modal-close" onclick="closeModal('stock-modal')">✕</div>
+    </div>
+    <input type="hidden" id="stock-product-id">
+    <input type="hidden" id="stock-type">
+    <div class="form-group">
+      <label class="form-label">الكمية</label>
+      <input class="form-input" id="stock-qty" type="number" min="0.01" step="0.01" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">سعر الوحدة (اختياري)</label>
+      <input class="form-input" id="stock-cost" type="number" min="0" step="0.01" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">السبب / المرجع</label>
+      <input class="form-input" id="stock-reason" type="text" placeholder="مثال: شراء من المورد">
+    </div>
+    <button class="btn-primary" onclick="saveStockMovement()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('stock-modal')">إلغاء</button>
+  </div>
+</div>
+
+
+<!-- EDIT PRODUCT MODAL -->
+<div class="modal" id="edit-product-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">✏️ تعديل المنتج</div>
+      <div class="modal-close" onclick="closeModal('edit-product-modal')">✕</div>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <div class="form-group"><label class="form-label">اسم المنتج</label><input class="form-input" id="edit-prod-name" type="text"></div>
+    <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku" type="text"></div>
+    <div class="form-group"><label class="form-label">الباركود</label><input class="form-input" id="edit-prod-barcode" type="text"></div>
+    <div class="form-group"><label class="form-label">الفئة</label><input class="form-input" id="edit-prod-category" type="text"></div>
+    <div class="form-group"><label class="form-label">سعر التكلفة</label><input class="form-input" id="edit-prod-cost" type="number"></div>
+    <div class="form-group"><label class="form-label">سعر البيع</label><input class="form-input" id="edit-prod-price" type="number"></div>
+    <div class="form-group"><label class="form-label">الحد الأدنى للمخزون</label><input class="form-input" id="edit-prod-min" type="number"></div>
+    <button class="btn-primary" onclick="saveEditProduct()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('edit-product-modal')">إلغاء</button>
+  </div>
+</div>
+
+</body></html>\`);
+  w.document.close();
+}
   <div class="modal-content">
     <div class="modal-header">
       <div class="modal-title">✏️ تعديل الفاتورة</div>
@@ -1203,6 +1375,54 @@ async function printInvoice(id) {
     <button class="btn-secondary" onclick="closeModal('edit-invoice-modal')">إلغاء</button>
   </div>
 </div>
+
+<!-- STOCK MOVEMENT MODAL -->
+<div class="modal" id="stock-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="stock-modal-title">➕ إضافة مخزون</div>
+      <div class="modal-close" onclick="closeModal('stock-modal')">✕</div>
+    </div>
+    <input type="hidden" id="stock-product-id">
+    <input type="hidden" id="stock-type">
+    <div class="form-group">
+      <label class="form-label">الكمية</label>
+      <input class="form-input" id="stock-qty" type="number" min="0.01" step="0.01" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">سعر الوحدة (اختياري)</label>
+      <input class="form-input" id="stock-cost" type="number" min="0" step="0.01" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">السبب / المرجع</label>
+      <input class="form-input" id="stock-reason" type="text" placeholder="مثال: شراء من المورد">
+    </div>
+    <button class="btn-primary" onclick="saveStockMovement()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('stock-modal')">إلغاء</button>
+  </div>
+</div>
+
+
+<!-- EDIT PRODUCT MODAL -->
+<div class="modal" id="edit-product-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">✏️ تعديل المنتج</div>
+      <div class="modal-close" onclick="closeModal('edit-product-modal')">✕</div>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <div class="form-group"><label class="form-label">اسم المنتج</label><input class="form-input" id="edit-prod-name" type="text"></div>
+    <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku" type="text"></div>
+    <div class="form-group"><label class="form-label">الباركود</label><input class="form-input" id="edit-prod-barcode" type="text"></div>
+    <div class="form-group"><label class="form-label">الفئة</label><input class="form-input" id="edit-prod-category" type="text"></div>
+    <div class="form-group"><label class="form-label">سعر التكلفة</label><input class="form-input" id="edit-prod-cost" type="number"></div>
+    <div class="form-group"><label class="form-label">سعر البيع</label><input class="form-input" id="edit-prod-price" type="number"></div>
+    <div class="form-group"><label class="form-label">الحد الأدنى للمخزون</label><input class="form-input" id="edit-prod-min" type="number"></div>
+    <button class="btn-primary" onclick="saveEditProduct()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('edit-product-modal')">إلغاء</button>
+  </div>
+</div>
+
 </body></html>`);
   w.document.close();
 }
@@ -1258,7 +1478,7 @@ async function saveInvoice() {
   const currentSector = localStorage.getItem('ff_sector') || 'general';
   const inv = { id:'local_'+Date.now(), sector: currentSector, clientName, clientVat:document.getElementById('inv-vat').value, items, subtotal:sub, vatAmount:vat, total, paymentMethod, status:'DRAFT', invoiceNumber:'DRAFT-'+Date.now(), issueDate:new Date().toISOString(), _pending:true };
   await dbPut('invoices', inv);
-  if (!id.startsWith('local_') && isOnline && TOKEN) {
+  if (isOnline && TOKEN) {
     try {
       const data = await apiCall('/invoices', { method:'POST', body:JSON.stringify({clientName, clientVat:inv.clientVat, items, subtotal:sub, vatAmount:vat, total, issueDate:new Date(), dueDate:new Date(Date.now()+30*86400000)}) });
       if (data.success) await dbPut('invoices', {...data.data, _pending:false});
@@ -1294,7 +1514,8 @@ async function saveExpense() {
 async function saveProduct() {
   const name = document.getElementById('prod-name').value;
   if (!name) { alert('يرجى إدخال الاسم'); return; }
-  const p = {id:'local_'+Date.now(), name, sellingPrice:parseFloat(document.getElementById('prod-price').value)||0, quantity:parseFloat(document.getElementById('prod-qty').value)||0, barcode:document.getElementById('prod-barcode').value, isActive:true, _pending:true};
+  const currentSector = localStorage.getItem('ff_sector') || 'general';
+  const p = {id:'local_'+Date.now(), sector: currentSector, name, sellingPrice:parseFloat(document.getElementById('prod-price').value)||0, quantity:parseFloat(document.getElementById('prod-qty').value)||0, barcode:document.getElementById('prod-barcode').value, isActive:true, _pending:true};
   await dbPut('products',p);
   if (isOnline&&TOKEN) { try { const d=await apiCall('/products',{method:'POST',body:JSON.stringify(p)}); if(d.success) await dbPut('products',{...d.data,_pending:false}); } catch(e) { await dbAdd('pending',{endpoint:'/products',data:p}); } }
   closeModal('product-modal'); ['prod-name','prod-price','prod-qty','prod-barcode'].forEach(id=>document.getElementById(id).value='');
@@ -1415,6 +1636,13 @@ document.addEventListener('click', e => {
 });
 
 (async () => {
+  // Restore session
+  const savedToken = localStorage.getItem('ff_token');
+  const savedUser = localStorage.getItem('ff_user');
+  if (savedToken && savedUser) {
+    TOKEN = savedToken;
+    try { USER = JSON.parse(savedUser); } catch(e) {}
+  }
   // Apply saved theme and language
   applyTheme(currentTheme);
   if (currentLang !== 'ar') {
@@ -1432,6 +1660,142 @@ document.addEventListener('click', e => {
     else p.classList.remove('active');
   });
 })();
+
+// ════════════════════════════════════════
+// INVOICE EDIT & DELETE
+// ════════════════════════════════════════
+async function editInvoice(id) {
+  const allInv = await dbGetAll('invoices');
+  const inv = allInv.find(i => i.id === id);
+  if (!inv) return alert('الفاتورة غير موجودة');
+  document.getElementById('edit-inv-id').value = id;
+  document.getElementById('edit-inv-status').value = inv.status || 'ISSUED';
+  document.getElementById('edit-inv-payment').value = inv.paymentMethod || '';
+  document.getElementById('edit-inv-notes').value = inv.notes || '';
+  if (inv.dueDate) document.getElementById('edit-inv-duedate').value = new Date(inv.dueDate).toISOString().split('T')[0];
+  openModal('edit-invoice-modal');
+}
+
+async function updateInvoice() {
+  const id = document.getElementById('edit-inv-id').value;
+  const status = document.getElementById('edit-inv-status').value;
+  const paymentMethod = document.getElementById('edit-inv-payment') ? document.getElementById('edit-inv-payment').value : '';
+  const notes = document.getElementById('edit-inv-notes').value;
+  const dueDate = document.getElementById('edit-inv-duedate').value;
+  const allInv = await dbGetAll('invoices');
+  const inv = allInv.find(i => i.id === id);
+  if (!inv) return alert('الفاتورة غير موجودة');
+  // Update locally first
+  await dbPut('invoices', { ...inv, status, paymentMethod, notes, dueDate });
+  // If server invoice, try API
+  if (!id.startsWith('local_') && isOnline && TOKEN) {
+    try {
+      const currentToken = TOKEN || '';
+      const headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
+      if (inv.status === 'PAID') {
+        const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
+        if (!pin) return;
+        headers['x-admin-pin'] = pin;
+      }
+      const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, {
+        method: 'PUT', headers, body: JSON.stringify({ status, paymentMethod, notes, dueDate: dueDate || undefined })
+      });
+      const data = await res.json();
+      if (data.success) await dbPut('invoices', { ...data.data });
+    } catch(e) {}
+  }
+  closeModal('edit-invoice-modal');
+  alert('✅ تم التعديل!');
+  showPage('invoices');
+}
+
+async function deleteInvoice(id) {
+  if (!confirm('هل أنت متأكد من الحذف؟')) return;
+  const allInv = await dbGetAll('invoices');
+  const inv = allInv.find(i => i.id === id);
+  // Local invoice
+  if (id.startsWith('local_') || !isOnline) {
+    const tx = db.transaction('invoices','readwrite');
+    tx.objectStore('invoices').delete(id);
+    alert('✅ تم الحذف!');
+    showPage('invoices');
+    return;
+  }
+  try {
+    const currentToken = TOKEN || '';
+    const headers = { 'Authorization': 'Bearer ' + currentToken, 'Content-Type': 'application/json' };
+    if (inv && inv.status === 'PAID') {
+      const pin = prompt('🔒 فاتورة مدفوعة\nأدخل PIN المدير:');
+      if (!pin) return;
+      headers['x-admin-pin'] = pin;
+    }
+    const res = await fetch('https://fastflow-backend-production.up.railway.app/api/v1/invoices/' + id, { method: 'DELETE', headers });
+    const data = await res.json();
+    if (data.success) {
+      const tx = db.transaction('invoices','readwrite');
+      tx.objectStore('invoices').delete(id);
+      alert('✅ تم الحذف!');
+      showPage('invoices');
+    } else {
+      alert('❌ ' + (data.error || 'حدث خطأ'));
+    }
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+
+async function editProduct(id) {
+  const products = await dbGetAll('products');
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('edit-prod-id').value = id;
+  document.getElementById('edit-prod-name').value = p.name || '';
+  document.getElementById('edit-prod-sku').value = p.sku || '';
+  document.getElementById('edit-prod-barcode').value = p.barcode || '';
+  document.getElementById('edit-prod-category').value = p.category || '';
+  document.getElementById('edit-prod-cost').value = p.costPrice || 0;
+  document.getElementById('edit-prod-price').value = p.sellingPrice || 0;
+  document.getElementById('edit-prod-min').value = p.minQuantity || 5;
+  openModal('edit-product-modal');
+}
+
+async function saveEditProduct() {
+  const id = document.getElementById('edit-prod-id').value;
+  const name = document.getElementById('edit-prod-name').value;
+  const sku = document.getElementById('edit-prod-sku').value;
+  const barcode = document.getElementById('edit-prod-barcode').value;
+  const category = document.getElementById('edit-prod-category').value;
+  const costPrice = parseFloat(document.getElementById('edit-prod-cost').value) || 0;
+  const sellingPrice = parseFloat(document.getElementById('edit-prod-price').value) || 0;
+  const minQuantity = parseFloat(document.getElementById('edit-prod-min').value) || 5;
+  if (!name) { alert('يرجى إدخال اسم المنتج'); return; }
+  try {
+    const products = await dbGetAll('products');
+    const p = products.find(x => x.id === id);
+    await dbPut('products', { ...p, name, sku, barcode, category, costPrice, sellingPrice, minQuantity });
+    if (isOnline && TOKEN) {
+      await apiCall('/products/' + id, { method: 'PUT', body: JSON.stringify({ name, sku, barcode, category, costPrice, sellingPrice, minQuantity }) });
+    }
+    closeModal('edit-product-modal');
+    alert('✅ تم التعديل!');
+    viewProduct(id);
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('هل أنت متأكد من حذف المنتج؟')) return;
+  try {
+    if (!id.startsWith('local_') && isOnline && TOKEN) {
+      const data = await apiCall('/products/' + id, { method: 'DELETE' });
+      if (!data.success) { alert('❌ ' + (data.error || 'حدث خطأ')); return; }
+    }
+    const products = await dbGetAll('products');
+    const p = products.find(x => x.id === id);
+    if (p) await dbPut('products', { ...p, isActive: false });
+    alert('✅ تم الحذف!');
+    showPage('products');
+  } catch(e) { alert('❌ ' + e.message); }
+}
+
 </script>
 
 <!-- EDIT INVOICE MODAL -->
@@ -1512,5 +1876,53 @@ document.addEventListener('click', e => {
     <button class="btn-secondary" onclick="closeModal('edit-invoice-modal')">إلغاء</button>
   </div>
 </div>
+
+<!-- STOCK MOVEMENT MODAL -->
+<div class="modal" id="stock-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="stock-modal-title">➕ إضافة مخزون</div>
+      <div class="modal-close" onclick="closeModal('stock-modal')">✕</div>
+    </div>
+    <input type="hidden" id="stock-product-id">
+    <input type="hidden" id="stock-type">
+    <div class="form-group">
+      <label class="form-label">الكمية</label>
+      <input class="form-input" id="stock-qty" type="number" min="0.01" step="0.01" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">سعر الوحدة (اختياري)</label>
+      <input class="form-input" id="stock-cost" type="number" min="0" step="0.01" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">السبب / المرجع</label>
+      <input class="form-input" id="stock-reason" type="text" placeholder="مثال: شراء من المورد">
+    </div>
+    <button class="btn-primary" onclick="saveStockMovement()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('stock-modal')">إلغاء</button>
+  </div>
+</div>
+
+
+<!-- EDIT PRODUCT MODAL -->
+<div class="modal" id="edit-product-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title">✏️ تعديل المنتج</div>
+      <div class="modal-close" onclick="closeModal('edit-product-modal')">✕</div>
+    </div>
+    <input type="hidden" id="edit-prod-id">
+    <div class="form-group"><label class="form-label">اسم المنتج</label><input class="form-input" id="edit-prod-name" type="text"></div>
+    <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="edit-prod-sku" type="text"></div>
+    <div class="form-group"><label class="form-label">الباركود</label><input class="form-input" id="edit-prod-barcode" type="text"></div>
+    <div class="form-group"><label class="form-label">الفئة</label><input class="form-input" id="edit-prod-category" type="text"></div>
+    <div class="form-group"><label class="form-label">سعر التكلفة</label><input class="form-input" id="edit-prod-cost" type="number"></div>
+    <div class="form-group"><label class="form-label">سعر البيع</label><input class="form-input" id="edit-prod-price" type="number"></div>
+    <div class="form-group"><label class="form-label">الحد الأدنى للمخزون</label><input class="form-input" id="edit-prod-min" type="number"></div>
+    <button class="btn-primary" onclick="saveEditProduct()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('edit-product-modal')">إلغاء</button>
+  </div>
+</div>
+
 </body>
-</htm
+</html>
