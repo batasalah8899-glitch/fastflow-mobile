@@ -466,7 +466,7 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
 // ════════════════════════════════════════
 const API = 'https://fastflow-backend-production.up.railway.app/api/v1';
 const DB_NAME = 'FastFlowDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let TOKEN = null;
 let USER = null;
@@ -665,8 +665,15 @@ function initDB() {
         }
       });
     };
-    req.onsuccess = e => { db = e.target.result; resolve(db); };
-    req.onerror = reject;
+    req.onsuccess = e => { 
+      db = e.target.result;
+      db.onversionchange = () => { db.close(); };
+      resolve(db); 
+    };
+    req.onerror = e => reject(e);
+    req.onblocked = e => {
+      console.warn('DB blocked - closing old connections');
+    };
   });
 }
 function dbGet(store, key) { return new Promise(r => { const t = db.transaction(store,'readonly'); const req = t.objectStore(store).get(key); req.onsuccess = () => r(req.result); req.onerror = () => r(null); }); }
