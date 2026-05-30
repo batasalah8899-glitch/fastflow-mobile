@@ -878,12 +878,19 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 // ════════════════════════════════════════
 async function loadAllData() {
   if (!isOnline || !TOKEN) return;
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
   const eps = ['invoices','customers','expenses','products','accounts','employees'];
   for (const ep of eps) {
     try {
       const data = await apiCall('/'+ep);
-      const items = data.data?.invoices || data.data || [];
-      if (Array.isArray(items) && items.length > 0) await dbPutAll(ep, items);
+      let items = data.data?.invoices || data.data || [];
+      if (Array.isArray(items) && items.length > 0) {
+        // Add sector to invoices from server
+        if (ep === 'invoices') {
+          items = items.map(inv => ({ ...inv, sector: inv.sector || activeSector }));
+        }
+        await dbPutAll(ep, items);
+      }
     } catch(e) {}
   }
 }
@@ -978,7 +985,7 @@ async function loadActivities() {
 async function renderInvoices() {
   const allInvoices = await dbGetAll('invoices');
   const activeSector = localStorage.getItem('ff_sector') || 'general';
-  const invoices = allInvoices.filter(i => !i.sector || i.sector === activeSector);
+  const invoices = allInvoices.filter(i => i.sector === activeSector);
   const sorted = invoices.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   const statusMap = { PAID:{label:t('paid'),cls:'b-green'}, ISSUED:{label:t('issued'),cls:'b-blue'}, OVERDUE:{label:t('overdue'),cls:'b-red'}, DRAFT:{label:t('draft'),cls:'b-gold'} };
   document.getElementById('main-content').innerHTML = `
@@ -1753,6 +1760,7 @@ async function deleteInvoice(id) {
   if (!confirm('هل أنت متأكد من الحذف؟')) return;
   const allInv = await dbGetAll('invoices');
   const inv = allInv.find(i => i.id === id);
+  if (!inv) { alert('❌ الفاتورة غير موجودة'); return; }
   // Local invoice
   if (id.startsWith('local_') || !isOnline) {
     const tx = db.transaction('invoices','readwrite');
