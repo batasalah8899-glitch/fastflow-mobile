@@ -734,12 +734,20 @@ async function doLogin() {
       errEl.style.display = 'block';
     }
   } catch(e) {
-    // Try offline
-    const saved = await dbGet('settings', 'credentials');
-    if (saved && saved.value.username === username && saved.value.password === password) {
-      showApp();
-    } else {
-      errEl.textContent = 'لا يوجد اتصال';
+    // Try offline - check if DB is ready
+    try {
+      if (!db) await initDB();
+      const saved = await dbGet('settings', 'credentials');
+      if (saved && saved.value && saved.value.username === username && saved.value.password === password) {
+        TOKEN = localStorage.getItem('ff_token') || null;
+        try { USER = JSON.parse(localStorage.getItem('ff_user') || 'null'); } catch(ex) {}
+        showApp();
+      } else {
+        errEl.textContent = t('no_connection') || 'لا يوجد اتصال';
+        errEl.style.display = 'block';
+      }
+    } catch(dbErr) {
+      errEl.textContent = t('no_connection') || 'لا يوجد اتصال';
       errEl.style.display = 'block';
     }
   }
@@ -1687,14 +1695,7 @@ document.addEventListener('click', e => {
 });
 
 (async () => {
-  // Restore session
-  const savedToken = localStorage.getItem('ff_token');
-  const savedUser = localStorage.getItem('ff_user');
-  if (savedToken && savedUser) {
-    TOKEN = savedToken;
-    try { USER = JSON.parse(savedUser); } catch(e) {}
-  }
-  // Apply saved theme and language
+  // Apply saved theme and language first
   applyTheme(currentTheme);
   if (currentLang !== 'ar') {
     document.documentElement.lang = currentLang;
