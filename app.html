@@ -1211,7 +1211,9 @@ async function renderEmployees() {
 }
 
 async function renderReports() {
-  const [invoices, expenses] = await Promise.all([dbGetAll('invoices'), dbGetAll('expenses')]);
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
+  const [allInv, expenses] = await Promise.all([dbGetAll('invoices'), dbGetAll('expenses')]);
+  const invoices = allInv.filter(i => i.sector === activeSector);
   const revenue = invoices.reduce((s,i)=>s+Number(i.subtotal||0),0);
   const vat = invoices.reduce((s,i)=>s+Number(i.vatAmount||0),0);
   const totalExp = expenses.reduce((s,e)=>s+Number(e.amount||0),0);
