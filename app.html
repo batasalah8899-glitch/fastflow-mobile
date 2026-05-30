@@ -724,16 +724,18 @@ async function doLogin() {
       USER = data.data.user;
       localStorage.setItem('ff_token', TOKEN);
       localStorage.setItem('ff_user', JSON.stringify(USER));
-      await dbPut('settings', { key: 'credentials', value: { username, password } });
-      await loadAllData();
+      try { await dbPut('settings', { key: 'credentials', value: { username, password } }); } catch(dbErr) { console.warn('dbPut error:', dbErr); }
+      try { await loadAllData(); } catch(loadErr) { console.warn('loadAllData error:', loadErr); }
       const savedSector = localStorage.getItem('ff_sector');
       if (!savedSector) showSectorScreen();
       else showApp();
+      return;
     } else {
       errEl.textContent = data.error || 'بيانات خاطئة';
       errEl.style.display = 'block';
     }
   } catch(e) {
+    console.error('Login catch error:', e);
     // Try offline - check if DB is ready
     try {
       if (!db) await initDB();
