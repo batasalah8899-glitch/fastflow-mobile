@@ -706,6 +706,28 @@ async function apiCall(endpoint, options = {}) {
 }
 
 // ════════════════════════════════════════
+// AUTO REFRESH TOKEN
+// ════════════════════════════════════════
+async function refreshToken() {
+  if (!TOKEN || !isOnline) return;
+  try {
+    const res = await fetch(API + '/auth/refresh', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success && data.data.token) {
+      TOKEN = data.data.token;
+      localStorage.setItem('ff_token', TOKEN);
+      console.log('✅ Token refreshed');
+    }
+  } catch(e) { console.warn('Token refresh failed:', e); }
+}
+
+// Refresh token every 20 hours
+setInterval(() => { if (TOKEN) refreshToken(); }, 20 * 60 * 60 * 1000);
+
+// ════════════════════════════════════════
 // AUTH
 // ════════════════════════════════════════
 async function doLogin() {
