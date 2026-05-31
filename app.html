@@ -654,6 +654,53 @@ function changeLang(lang) {
 }
 
 // ════════════════════════════════════════
+// RBAC - Role Based Access Control
+// ════════════════════════════════════════
+const ROLES = {
+  SUPER_ADMIN: 6, ADMIN: 5, MANAGER: 4, ACCOUNTANT: 3, CASHIER: 2, VIEWER: 1
+};
+
+function userRole() {
+  return USER?.role || 'VIEWER';
+}
+
+function hasRole(minRole) {
+  return (ROLES[userRole()] || 1) >= (ROLES[minRole] || 1);
+}
+
+function canCreate() { return hasRole('CASHIER'); }
+function canEdit()   { return hasRole('ACCOUNTANT'); }
+function canDelete() { return hasRole('MANAGER'); }
+function canReport() { return hasRole('ACCOUNTANT'); }
+function canSettings(){ return hasRole('ADMIN'); }
+
+function rbacHide(el) { if(el) el.style.display='none'; }
+function rbacShow(el) { if(el) el.style.display=''; }
+
+function applyRBAC() {
+  const role = userRole();
+  // Hide add buttons for VIEWER
+  if (!canCreate()) {
+    document.querySelectorAll('.btn-fab, .section-more').forEach(el => rbacHide(el));
+  }
+  // Hide settings for non-admins
+  if (!canSettings()) {
+    const settingsEl = document.getElementById('more-lbl-settings')?.parentElement;
+    rbacHide(settingsEl);
+  }
+  // Show role badge in topbar
+  const roleColors = { SUPER_ADMIN:'#ef4444', ADMIN:'#f0b429', MANAGER:'#60a5fa', ACCOUNTANT:'#10b981', CASHIER:'#a78bfa', VIEWER:'#94a3b8' };
+  const roleAr = { SUPER_ADMIN:'سوبر أدمن', ADMIN:'مدير', MANAGER:'مشرف', ACCOUNTANT:'محاسب', CASHIER:'كاشير', VIEWER:'مشاهد' };
+  const topbarSector = document.getElementById('topbar-sector');
+  if (topbarSector) {
+    const sectorIcon = localStorage.getItem('ff_sector_icon') || '🏢';
+    const sectorName = localStorage.getItem('ff_sector_name') || '';
+    topbarSector.innerHTML = sectorIcon + ' ' + sectorName + 
+      ' <span style="background:' + (roleColors[role]||'#94a3b8') + '22;color:' + (roleColors[role]||'#94a3b8') + ';padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;margin-right:4px">' + (roleAr[role]||role) + '</span>';
+  }
+}
+
+// ════════════════════════════════════════
 // INDEXEDDB
 // ════════════════════════════════════════
 function initDB() {
@@ -872,6 +919,7 @@ function showApp() {
   const sectorName = localStorage.getItem('ff_sector_name') || t('sector');
   document.getElementById('topbar-sector').textContent = sectorIcon + ' ' + sectorName;
   updateNavLabels();
+  applyRBAC();
   showPage('dashboard');
 }
 
@@ -1387,6 +1435,10 @@ async function renderReports() {
 // SETTINGS
 // ════════════════════════════════════════
 function renderSettings() {
+  if (!canSettings()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية الوصول للإعدادات</div></div>';
+    return;
+  }
   const sector = localStorage.getItem('ff_sector_name') || t('sector');
   const sIcon = localStorage.getItem('ff_sector_icon') || '🏢';
   document.getElementById('main-content').innerHTML = `
@@ -1927,6 +1979,7 @@ async function updateInvoice() {
 }
 
 async function deleteInvoice(id) {
+  if (!canDelete()) { alert('❌ ليس لديك صلاحية الحذف'); return; }
   if (!confirm('هل أنت متأكد من الحذف؟')) return;
   const allInv = await dbGetAll('invoices');
   const inv = allInv.find(i => i.id === id);
@@ -2000,6 +2053,7 @@ async function saveEditProduct() {
 }
 
 async function deleteProduct(id) {
+  if (!canDelete()) { alert('❌ ليس لديك صلاحية الحذف'); return; }
   if (!confirm('هل أنت متأكد من حذف المنتج؟')) return;
   try {
     // Delete from local DB first
