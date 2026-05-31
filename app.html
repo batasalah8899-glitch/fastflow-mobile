@@ -157,6 +157,15 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
 .lang-globe-btn span { font-size:10px; color:var(--text2); display:block; margin-top:2px; }
 .lang-globe-btn:hover { border-color:var(--primary); background:rgba(240,180,41,0.1); }
 .lang-globe-btn.active { border-color:var(--primary); background:rgba(240,180,41,0.15); }
+.lang-dict-item { display:flex; align-items:center; gap:12px; padding:11px 14px; cursor:pointer; border-bottom:1px solid rgba(30,45,74,0.3); transition:background 0.15s; }
+.lang-dict-item:last-child { border-bottom:none; }
+.lang-dict-item:hover { background:rgba(240,180,41,0.06); }
+.lang-dict-item.active { background:rgba(240,180,41,0.1); border-right:3px solid var(--primary); }
+.lang-flag { font-size:22px; flex-shrink:0; }
+.lang-details { flex:1; }
+.lang-native { font-size:13px; font-weight:700; color:var(--text); }
+.lang-english { font-size:10px; color:var(--text3); margin-top:1px; }
+.lang-region { font-size:10px; color:var(--primary); background:rgba(240,180,41,0.1); padding:2px 8px; border-radius:10px; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -172,25 +181,71 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
       <div class="login-title">NOBO ERP</div>
       <div class="login-sub" id="login-sub-text">Arabic AI SaaS ERP | السعودية والخليج</div>
     </div>
-    <!-- Globe Language Selector -->
+    <!-- Dictionary Language Selector -->
     <div style="margin-bottom:20px">
-      <div onclick="toggleLangPicker()" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 16px">
-        <span style="font-size:20px" id="login-globe">🌍</span>
-        <span style="font-size:13px;color:var(--text2)" id="login-lang-name">اختر اللغة</span>
-        <span style="font-size:10px;color:var(--text3)">▼</span>
+      <div onclick="toggleLangPicker()" style="display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;background:var(--bg3);border:1.5px solid var(--border);border-radius:14px;padding:12px 18px;transition:all 0.2s" id="lang-selector-btn">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--primary),#3b82f6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px" id="login-globe">📖</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text)" id="login-lang-name">اختر لغة النظام</div>
+          <div style="font-size:10px;color:var(--text3)">Select System Language</div>
+        </div>
+        <span style="font-size:12px;color:var(--text3)" id="lang-arrow">▼</span>
       </div>
-      <div id="lang-picker" style="display:none;margin-top:8px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;overflow:hidden">
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
-          <div onclick="setLoginLang('ar')" class="lang-globe-btn" data-code="ar">🇸🇦<br><span>ع</span></div>
-          <div onclick="setLoginLang('en')" class="lang-globe-btn" data-code="en">🇺🇸<br><span>En</span></div>
-          <div onclick="setLoginLang('ur')" class="lang-globe-btn" data-code="ur">🇵🇰<br><span>اردو</span></div>
-          <div onclick="setLoginLang('hi')" class="lang-globe-btn" data-code="hi">🇮🇳<br><span>हि</span></div>
-          <div onclick="setLoginLang('bn')" class="lang-globe-btn" data-code="bn">🇧🇩<br><span>বা</span></div>
-          <div onclick="setLoginLang('tl')" class="lang-globe-btn" data-code="tl">🇵🇭<br><span>Fil</span></div>
-          <div onclick="setLoginLang('id')" class="lang-globe-btn" data-code="id">🇮🇩<br><span>Id</span></div>
-          <div onclick="setLoginLang('fr')" class="lang-globe-btn" data-code="fr">🇫🇷<br><span>Fr</span></div>
-          <div onclick="setLoginLang('tr')" class="lang-globe-btn" data-code="tr">🇹🇷<br><span>Tr</span></div>
-          <div onclick="setLoginLang('zh')" class="lang-globe-btn" data-code="zh">🇨🇳<br><span>中</span></div>
+      <div id="lang-picker" style="display:none;margin-top:8px;background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.3)">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px">
+          <span>📖</span> قاموس اللغات — Language Dictionary
+        </div>
+        <div style="max-height:280px;overflow-y:auto">
+          <div onclick="setLoginLang('ar')" class="lang-dict-item" data-code="ar">
+            <span class="lang-flag">🇸🇦</span>
+            <div class="lang-details"><div class="lang-native">العربية</div><div class="lang-english">Arabic</div></div>
+            <span class="lang-region">السعودية • الخليج</span>
+          </div>
+          <div onclick="setLoginLang('en')" class="lang-dict-item" data-code="en">
+            <span class="lang-flag">🇺🇸</span>
+            <div class="lang-details"><div class="lang-native">English</div><div class="lang-english">English</div></div>
+            <span class="lang-region">United States</span>
+          </div>
+          <div onclick="setLoginLang('ur')" class="lang-dict-item" data-code="ur">
+            <span class="lang-flag">🇵🇰</span>
+            <div class="lang-details"><div class="lang-native">اردو</div><div class="lang-english">Urdu</div></div>
+            <span class="lang-region">Pakistan</span>
+          </div>
+          <div onclick="setLoginLang('hi')" class="lang-dict-item" data-code="hi">
+            <span class="lang-flag">🇮🇳</span>
+            <div class="lang-details"><div class="lang-native">हिंदी</div><div class="lang-english">Hindi</div></div>
+            <span class="lang-region">India</span>
+          </div>
+          <div onclick="setLoginLang('bn')" class="lang-dict-item" data-code="bn">
+            <span class="lang-flag">🇧🇩</span>
+            <div class="lang-details"><div class="lang-native">বাংলা</div><div class="lang-english">Bengali</div></div>
+            <span class="lang-region">Bangladesh</span>
+          </div>
+          <div onclick="setLoginLang('tl')" class="lang-dict-item" data-code="tl">
+            <span class="lang-flag">🇵🇭</span>
+            <div class="lang-details"><div class="lang-native">Filipino</div><div class="lang-english">Filipino</div></div>
+            <span class="lang-region">Philippines</span>
+          </div>
+          <div onclick="setLoginLang('id')" class="lang-dict-item" data-code="id">
+            <span class="lang-flag">🇮🇩</span>
+            <div class="lang-details"><div class="lang-native">Indonesia</div><div class="lang-english">Indonesian</div></div>
+            <span class="lang-region">Indonesia</span>
+          </div>
+          <div onclick="setLoginLang('fr')" class="lang-dict-item" data-code="fr">
+            <span class="lang-flag">🇫🇷</span>
+            <div class="lang-details"><div class="lang-native">Français</div><div class="lang-english">French</div></div>
+            <span class="lang-region">France</span>
+          </div>
+          <div onclick="setLoginLang('tr')" class="lang-dict-item" data-code="tr">
+            <span class="lang-flag">🇹🇷</span>
+            <div class="lang-details"><div class="lang-native">Türkçe</div><div class="lang-english">Turkish</div></div>
+            <span class="lang-region">Turkey</span>
+          </div>
+          <div onclick="setLoginLang('zh')" class="lang-dict-item" data-code="zh">
+            <span class="lang-flag">🇨🇳</span>
+            <div class="lang-details"><div class="lang-native">中文</div><div class="lang-english">Chinese</div></div>
+            <span class="lang-region">China</span>
+          </div>
         </div>
       </div>
     </div>
@@ -586,7 +641,11 @@ function applyTheme(theme) {
 // ════════════════════════════════════════
 function toggleLangPicker() {
   const picker = document.getElementById('lang-picker');
-  if (picker) picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+  const arrow = document.getElementById('lang-arrow');
+  if (!picker) return;
+  const isOpen = picker.style.display !== 'none';
+  picker.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
 }
 
 function setLoginLang(lang) {
@@ -606,7 +665,7 @@ function setLoginLang(lang) {
   if (langName) langName.textContent = names[lang] || lang;
   
   // Update active state
-  document.querySelectorAll('.lang-globe-btn').forEach(b => {
+  document.querySelectorAll('.lang-globe-btn, .lang-dict-item').forEach(b => {
     b.classList.toggle('active', b.getAttribute('data-code') === lang);
   });
   
@@ -1708,7 +1767,7 @@ async function whatsappInvoice(id) {
   const invoices = await dbGetAll('invoices');
   const inv = invoices.find(i => i.id === id);
   if (!inv) return;
-  const companyName = (USER && USER.company && USER.company.nameAr) ? USER.company.nameAr : 'FastFlow ERP';
+  const companyName = (USER && USER.company && USER.company.nameAr) ? USER.company.nameAr : 'Nobo ERP';
   const vatNumber = (USER && USER.company && USER.company.vatNumber) ? USER.company.vatNumber : '';
   const items = (inv.items || []).map((item, i) => 
     `${i+1}. ${item.name} × ${item.quantity} = ${Number(item.total||0).toLocaleString()} ر.س`
@@ -1731,7 +1790,7 @@ async function whatsappInvoice(id) {
     `✅ *الإجمالي: ${Number(inv.total||0).toLocaleString()} ر.س*%0A` +
     `━━━━━━━━━━━━━━━━%0A` +
     `${vatNumber ? '🔢 الرقم الضريبي: ' + vatNumber + '%0A' : ''}` +
-    `⚡ _FastFlow ERP | ZATCA Compliant_`;
+    `⚡ _Nobo ERP | ZATCA Compliant_`;
 
   // Ask for phone number
   const phone = prompt('أدخل رقم الهاتف (مثال: 966501234567):');
@@ -1742,7 +1801,7 @@ async function whatsappInvoice(id) {
 }
 
 async function whatsappReminder(clientName, phone, amount, invoiceNumber) {
-  const companyName = (USER && USER.company && USER.company.nameAr) ? USER.company.nameAr : 'FastFlow ERP';
+  const companyName = (USER && USER.company && USER.company.nameAr) ? USER.company.nameAr : 'Nobo ERP';
   const msg = 
     `⚡ *${companyName}*%0A` +
     `━━━━━━━━━━━━━━━━%0A` +
@@ -1751,7 +1810,7 @@ async function whatsappReminder(clientName, phone, amount, invoiceNumber) {
     `المبلغ المستحق: *${Number(amount).toLocaleString()} ر.س*%0A` +
     `━━━━━━━━━━━━━━━━%0A` +
     `نرجو السداد في أقرب وقت%0A` +
-    `⚡ _FastFlow ERP_`;
+    `⚡ _Nobo ERP_`;
   
   const cleanPhone = phone.replace(/[^0-9]/g, '');
   window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
