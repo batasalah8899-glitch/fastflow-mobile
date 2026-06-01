@@ -458,6 +458,8 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
     <div class="more-item" onclick="renderPermissions();toggleMore()"><span class="more-icon">🔒</span><span>صلاحياتي</span></div>
     <div class="more-item" onclick="showPage('archive');toggleMore()"><span class="more-icon">🗄️</span><span>الأرشيف</span></div>
     <div class="more-item" onclick="showPage('transfer');toggleMore()"><span class="more-icon">📥</span><span>نقل البيانات</span></div>
+    <div class="more-item" onclick="showPage('ledger');toggleMore()"><span class="more-icon">📒</span><span>دفتر الأستاذ</span></div>
+    <div class="more-item" onclick="showPage('customize');toggleMore()"><span class="more-icon">🎨</span><span>التخصيص</span></div>
     <div class="more-item" onclick="doLogout()"><span class="more-icon">🚪</span><span id="more-lbl-logout" style="color:var(--red)">خروج</span></div>
   </div>
 </div>
@@ -1026,6 +1028,269 @@ async function confirmCSVImport(rows) {
   
   alert('✅ تم استيراد ' + imported + ' سجل!');
   document.getElementById('import-preview').innerHTML = '<div style="color:var(--green);font-size:13px;font-weight:700">✅ تم الاستيراد بنجاح! ' + imported + ' سجل</div>';
+}
+
+// ════════════════════════════════════════
+// GENERAL LEDGER - دفتر الأستاذ العام
+// ════════════════════════════════════════
+async function renderLedger() {
+  if (!canManageAccounts()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية عرض دفتر الأستاذ</div></div>';
+    return;
+  }
+  document.getElementById('main-content').innerHTML = '<div class="loading">⏳ جاري تحميل دفتر الأستاذ...</div>';
+
+  try {
+    const [invoices, expenses, products] = await Promise.all([
+      dbGetAll('invoices'), dbGetAll('expenses'), dbGetAll('products')
+    ]);
+    const activeSector = localStorage.getItem('ff_sector') || 'general';
+    const sectorInvoices = invoices.filter(i => i.sector === activeSector);
+
+    // Build journal entries from transactions
+    const entries = [];
+    
+    // From invoices
+    sectorInvoices.forEach(inv => {
+      if (inv.total > 0) {
+        entries.push({
+          date: inv.issueDate || new Date().toISOString(),
+          ref: inv.invoiceNumber || 'INV',
+          desc: 'مبيعات - ' + (inv.clientName || '-'),
+          debit: '1200 - حسابات مدينة',
+          credit: '4100 - إيرادات المبيعات',
+          amount: inv.subtotal || 0,
+          type: 'SALES'
+        });
+        if (inv.vatAmount > 0) {
+          entries.push({
+            date: inv.issueDate || new Date().toISOString(),
+            ref: inv.invoiceNumber || 'INV',
+            desc: 'ضريبة القيمة المضافة',
+            debit: '1200 - حسابات مدينة',
+            credit: '2200 - ضريبة VAT مستحقة',
+            amount: inv.vatAmount || 0,
+            type: 'VAT'
+          });
+        }
+      }
+    });
+
+    // From expenses
+    expenses.forEach(exp => {
+      entries.push({
+        date: exp.date || new Date().toISOString(),
+        ref: 'EXP-' + exp.id?.slice(-4),
+        desc: exp.title || 'مصروف',
+        debit: '5100 - مصروفات تشغيلية',
+        credit: '1100 - الصندوق',
+        amount: exp.amount || 0,
+        type: 'EXPENSE'
+      });
+    });
+
+    // Sort by date
+    entries.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    // Totals
+    const totalDebits = entries.reduce((s,e) => s + e.amount, 0);
+    const salesTotal = entries.filter(e=>e.type==='SALES').reduce((s,e)=>s+e.amount,0);
+    const expTotal = entries.filter(e=>e.type==='EXPENSE').reduce((s,e)=>s+e.amount,0);
+    const vatTotal = entries.filter(e=>e.type==='VAT').reduce((s,e)=>s+e.amount,0);
+
+    const typeColors = { SALES:'rgba(34,197,94,0.1)', EXPENSE:'rgba(239,68,68,0.1)', VAT:'rgba(200,150,60,0.1)' };
+    const typeIcons = { SALES:'💚', EXPENSE:'🔴', VAT:'🏛️' };
+
+    document.getElementById('main-content').innerHTML = `
+      <div class="page-header">
+        <div class="page-title">📒 دفتر الأستاذ العام</div>
+        <div class="page-sub">General Ledger · ${entries.length} قيد</div>
+      </div>
+      <div class="stat-grid" style="margin-bottom:14px">
+        <div class="stat-card"><div class="stat-icon">💚</div><div class="stat-value" style="color:var(--green);font-size:14px">${salesTotal.toLocaleString()}</div><div class="stat-label">إيرادات ر.س</div></div>
+        <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-value" style="color:var(--red);font-size:14px">${expTotal.toLocaleString()}</div><div class="stat-label">مصروفات ر.س</div></div>
+        <div class="stat-card"><div class="stat-icon">🏛️</div><div class="stat-value" style="color:var(--primary);font-size:14px">${vatTotal.toLocaleString()}</div><div class="stat-label">VAT ر.س</div></div>
+        <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-value" style="color:${salesTotal-expTotal>=0?'var(--green)':'var(--red)'};font-size:14px">${(salesTotal-expTotal).toLocaleString()}</div><div class="stat-label">صافي ر.س</div></div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead>
+            <tr style="background:#111827">
+              <th style="padding:8px;text-align:right;color:#8896a8">التاريخ</th>
+              <th style="padding:8px;text-align:right;color:#8896a8">المرجع</th>
+              <th style="padding:8px;text-align:right;color:#8896a8">البيان</th>
+              <th style="padding:8px;text-align:right;color:#8896a8">مدين</th>
+              <th style="padding:8px;text-align:right;color:#8896a8">دائن</th>
+              <th style="padding:8px;text-align:right;color:#8896a8">المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${entries.slice(0,50).map(e => `
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);background:${typeColors[e.type]||'transparent'}">
+                <td style="padding:8px;color:#8896a8">${e.date?new Date(e.date).toLocaleDateString('ar-SA'):'-'}</td>
+                <td style="padding:8px;color:var(--primary);font-weight:700">${e.ref}</td>
+                <td style="padding:8px">${e.desc}</td>
+                <td style="padding:8px;font-size:10px;color:#60a5fa">${e.debit}</td>
+                <td style="padding:8px;font-size:10px;color:#a78bfa">${e.credit}</td>
+                <td style="padding:8px;font-weight:700;text-align:left;direction:ltr">${Number(e.amount).toLocaleString()}</td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:#111827;font-weight:700">
+              <td colspan="5" style="padding:10px;color:var(--primary)">الإجمالي</td>
+              <td style="padding:10px;direction:ltr;text-align:left;color:var(--primary)">${totalDebits.toLocaleString()}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>`;
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div>❌ خطأ: ' + e.message + '</div></div>';
+  }
+}
+
+// ════════════════════════════════════════
+// CUSTOMIZATION - التخصيص
+// ════════════════════════════════════════
+function renderCustomize() {
+  if (!canSettings()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية التخصيص</div></div>';
+    return;
+  }
+
+  const savedCustom = JSON.parse(localStorage.getItem('nobo_custom') || '{}');
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">🎨 تخصيص النظام</div>
+      <div class="page-sub">خصّص Nobo ERP حسب احتياجاتك</div>
+    </div>
+
+    <!-- اسم الشركة والشعار -->
+    <div class="section-title">🏢 هوية الشركة</div>
+    <div class="list-card" style="padding:16px;margin-bottom:14px">
+      <div class="form-group">
+        <label class="form-label">اسم الشركة في الفواتير</label>
+        <input class="form-input" id="custom-company-name" value="${savedCustom.companyName || USER?.company?.nameAr || ''}" placeholder="اسم شركتك">
+      </div>
+      <div class="form-group">
+        <label class="form-label">شعار رسالة الترحيب</label>
+        <input class="form-input" id="custom-tagline" value="${savedCustom.tagline || 'Deep. Smart. Relentless.'}" placeholder="شعارك">
+      </div>
+      <div class="form-group">
+        <label class="form-label">العملة</label>
+        <select class="form-input" id="custom-currency">
+          <option value="sar" ${(savedCustom.currency||'sar')==='sar'?'selected':''}>🇸🇦 ريال سعودي (ر.س)</option>
+          <option value="aed" ${savedCustom.currency==='aed'?'selected':''}>🇦🇪 درهم إماراتي (د.إ)</option>
+          <option value="kwd" ${savedCustom.currency==='kwd'?'selected':''}>🇰🇼 دينار كويتي (د.ك)</option>
+          <option value="egp" ${savedCustom.currency==='egp'?'selected':''}>🇪🇬 جنيه مصري (ج.م)</option>
+          <option value="usd" ${savedCustom.currency==='usd'?'selected':''}>🇺🇸 دولار ($)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- تخصيص الفاتورة -->
+    <div class="section-title">🧾 تخصيص الفاتورة</div>
+    <div class="list-card" style="padding:16px;margin-bottom:14px">
+      <div class="form-group">
+        <label class="form-label">رسالة أسفل الفاتورة</label>
+        <input class="form-input" id="custom-invoice-footer" value="${savedCustom.invoiceFooter || 'شكراً لتعاملكم معنا'}" placeholder="رسالة شكر أو تعليمات">
+      </div>
+      <div class="form-group">
+        <label class="form-label">نسبة الضريبة الافتراضية</label>
+        <select class="form-input" id="custom-vat">
+          <option value="15" ${(savedCustom.vatRate||'15')==='15'?'selected':''}>15% (السعودية)</option>
+          <option value="5" ${savedCustom.vatRate==='5'?'selected':''}>5% (الإمارات)</option>
+          <option value="0" ${savedCustom.vatRate==='0'?'selected':''}>0% (معفي)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">تنسيق رقم الفاتورة</label>
+        <input class="form-input" id="custom-inv-prefix" value="${savedCustom.invoicePrefix || 'INV'}" placeholder="INV أو فاتورة">
+      </div>
+    </div>
+
+    <!-- تخصيص الصلاحيات -->
+    <div class="section-title">🔒 تخصيص حدود الصلاحيات</div>
+    <div class="list-card" style="padding:16px;margin-bottom:14px">
+      <div class="form-group">
+        <label class="form-label">حد فاتورة الكاشير (ر.س)</label>
+        <input class="form-input" id="custom-cashier-limit" type="number" value="${savedCustom.cashierLimit || 10000}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">حد فاتورة المحاسب (ر.س)</label>
+        <input class="form-input" id="custom-accountant-limit" type="number" value="${savedCustom.accountantLimit || 100000}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">حد خصم الكاشير (%)</label>
+        <input class="form-input" id="custom-cashier-discount" type="number" value="${savedCustom.cashierDiscount || 5}" max="100">
+      </div>
+    </div>
+
+    <!-- تخصيص لوحة التحكم -->
+    <div class="section-title">📊 تخصيص لوحة التحكم</div>
+    <div class="list-card" style="padding:16px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="show-clock" ${savedCustom.showClock!==false?'checked':''} style="width:16px;height:16px;accent-color:var(--primary)">
+          ⏰ إظهار الساعة
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="show-activities" ${savedCustom.showActivities!==false?'checked':''} style="width:16px;height:16px;accent-color:var(--primary)">
+          ⚡ إظهار النشاطات
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="show-hijri" ${savedCustom.showHijri!==false?'checked':''} style="width:16px;height:16px;accent-color:var(--primary)">
+          📅 التاريخ الهجري
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="show-vat-col" ${savedCustom.showVatCol!==false?'checked':''} style="width:16px;height:16px;accent-color:var(--primary)">
+          🏛️ عمود الضريبة
+        </label>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveCustomization()" style="margin-bottom:8px">💾 حفظ التخصيصات</button>
+    <button class="btn-secondary" onclick="resetCustomization()">↺ إعادة الضبط</button>`;
+}
+
+function saveCustomization() {
+  const custom = {
+    companyName: document.getElementById('custom-company-name')?.value,
+    tagline: document.getElementById('custom-tagline')?.value,
+    currency: document.getElementById('custom-currency')?.value,
+    invoiceFooter: document.getElementById('custom-invoice-footer')?.value,
+    vatRate: document.getElementById('custom-vat')?.value,
+    invoicePrefix: document.getElementById('custom-inv-prefix')?.value,
+    cashierLimit: parseInt(document.getElementById('custom-cashier-limit')?.value) || 10000,
+    accountantLimit: parseInt(document.getElementById('custom-accountant-limit')?.value) || 100000,
+    cashierDiscount: parseInt(document.getElementById('custom-cashier-discount')?.value) || 5,
+    showClock: document.getElementById('show-clock')?.checked,
+    showActivities: document.getElementById('show-activities')?.checked,
+    showHijri: document.getElementById('show-hijri')?.checked,
+    showVatCol: document.getElementById('show-vat-col')?.checked,
+  };
+  localStorage.setItem('nobo_custom', JSON.stringify(custom));
+  
+  // Apply limits dynamically
+  INVOICE_LIMITS.CASHIER = custom.cashierLimit;
+  INVOICE_LIMITS.ACCOUNTANT = custom.accountantLimit;
+  DISCOUNT_LIMITS.CASHIER = custom.cashierDiscount;
+  
+  alert('✅ تم حفظ التخصيصات!');
+}
+
+function resetCustomization() {
+  if (!confirm('هل تريد إعادة ضبط كل التخصيصات؟')) return;
+  localStorage.removeItem('nobo_custom');
+  alert('✅ تم إعادة الضبط!');
+  renderCustomize();
+}
+
+function loadCustomization() {
+  const custom = JSON.parse(localStorage.getItem('nobo_custom') || '{}');
+  if (custom.cashierLimit) INVOICE_LIMITS.CASHIER = custom.cashierLimit;
+  if (custom.accountantLimit) INVOICE_LIMITS.ACCOUNTANT = custom.accountantLimit;
+  if (custom.cashierDiscount) DISCOUNT_LIMITS.CASHIER = custom.cashierDiscount;
 }
 
 // ════════════════════════════════════════
@@ -1718,6 +1983,7 @@ function showApp() {
   document.getElementById('topbar-sector').textContent = sectorIcon + ' ' + sectorName;
   updateNavLabels();
   applyRBAC();
+  loadCustomization();
   showPage('dashboard');
 }
 
@@ -1747,6 +2013,8 @@ function showPage(page) {
   else if (page === 'settings') renderSettings();
   else if (page === 'archive') renderArchive();
   else if (page === 'transfer') renderTransfer();
+  else if (page === 'ledger') renderLedger();
+  else if (page === 'customize') renderCustomize();
 }
 
 function toggleMore() {
