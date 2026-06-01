@@ -461,6 +461,9 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
     <div class="more-item" onclick="showPage('ledger');toggleMore()"><span class="more-icon">📒</span><span>دفتر الأستاذ</span></div>
     <div class="more-item" onclick="showPage('customize');toggleMore()"><span class="more-icon">🎨</span><span>التخصيص</span></div>
     <div class="more-item" onclick="showPage('bi');toggleMore()"><span class="more-icon">📊</span><span>BI Dashboard</span></div>
+    <div class="more-item" onclick="showPage('vendors');toggleMore()"><span class="more-icon">🤝</span><span>الموردون</span></div>
+    <div class="more-item" onclick="showPage('purchases');toggleMore()"><span class="more-icon">🛒</span><span>المشتريات</span></div>
+    <div class="more-item" onclick="showPage('payroll');toggleMore()"><span class="more-icon">👤</span><span>الرواتب</span></div>
     <div class="more-item" onclick="doLogout()"><span class="more-icon">🚪</span><span id="more-lbl-logout" style="color:var(--red)">خروج</span></div>
   </div>
 </div>
@@ -1029,6 +1032,466 @@ async function confirmCSVImport(rows) {
   
   alert('✅ تم استيراد ' + imported + ' سجل!');
   document.getElementById('import-preview').innerHTML = '<div style="color:var(--green);font-size:13px;font-weight:700">✅ تم الاستيراد بنجاح! ' + imported + ' سجل</div>';
+}
+
+// ════════════════════════════════════════
+// PAYROLL - الرواتب + GOSI + WPS
+// ════════════════════════════════════════
+async function renderPayroll() {
+  if (!canViewSalaries()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية عرض الرواتب</div></div>';
+    return;
+  }
+
+  const employees = await dbGetAll('employees') || [];
+  const payrollRuns = await dbGetAll('payroll_runs') || [];
+
+  // Calc totals
+  const totalSalaries = employees.reduce((s,e) => s + Number(e.basicSalary||0), 0);
+  const totalGOSI = employees.reduce((s,e) => {
+    const basic = Number(e.basicSalary||0);
+    const housing = Number(e.housingAllowance||0);
+    return s + ((basic + housing) * 0.1175); // 11.75% employer
+  }, 0);
+  const totalNet = employees.reduce((s,e) => {
+    const basic = Number(e.basicSalary||0);
+    const housing = Number(e.housingAllowance||0);
+    const trans = Number(e.transportAllowance||0);
+    const gosiEmployee = (basic + housing) * 0.1; // 10% employee
+    return s + basic + housing + trans - gosiEmployee;
+  }, 0);
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">👤 الرواتب</div>
+      <div class="page-sub">Payroll · GOSI · WPS · ${employees.length} موظف</div>
+    </div>
+
+    <div class="stat-grid" style="margin-bottom:14px">
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" style="color:var(--primary);font-size:14px">${Math.round(totalSalaries).toLocaleString()}</div><div class="stat-label">إجمالي الرواتب</div></div>
+      <div class="stat-card"><div class="stat-icon">🏛️</div><div class="stat-value" style="color:var(--red);font-size:14px">${Math.round(totalGOSI).toLocaleString()}</div><div class="stat-label">GOSI صاحب عمل</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" style="color:var(--green);font-size:14px">${Math.round(totalNet).toLocaleString()}</div><div class="stat-label">صافي المدفوع</div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value" style="color:var(--blue)">${payrollRuns.length}</div><div class="stat-label">دورات رواتب</div></div>
+    </div>
+
+    <!-- GOSI Info -->
+    <div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.2);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px">🏛️ احتساب GOSI (التأمينات الاجتماعية)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+        <div style="background:var(--bg3);border-radius:8px;padding:10px">
+          <div style="color:var(--text3);margin-bottom:4px">صاحب العمل</div>
+          <div style="font-weight:700;color:var(--primary)">9.75% تأمينات + 2% إجازات</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">= 11.75% إجمالي</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:8px;padding:10px">
+          <div style="color:var(--text3);margin-bottom:4px">الموظف</div>
+          <div style="font-weight:700;color:var(--blue)">9.75% تأمينات + 0.25% مخاطر مهنية</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">= 10% إجمالي</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px">⚠️ تحتسب على: الراتب الأساسي + بدل السكن فقط</div>
+    </div>
+
+    <!-- WPS Info -->
+    <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">🏦 WPS - نظام حماية الأجور</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8">
+        ✅ يجب صرف الراتب خلال <strong>10 أيام</strong> من نهاية الشهر<br>
+        ✅ ملف WPS يُرسل لوزارة الموارد البشرية<br>
+        ✅ يشمل: رقم الآيبان + المبلغ + تاريخ الصرف
+      </div>
+    </div>
+
+    <!-- Employees -->
+    <div class="section-title">
+      <span>👥 الموظفون</span>
+      ${canManageEmployees()?'<span class="section-more" onclick="openModal('employee-modal')">+ موظف جديد</span>':''}
+    </div>
+    <div class="list-card" style="margin-bottom:14px">
+      ${employees.length === 0 ? `<div class="empty-state"><div class="empty-icon">👤</div><div>لا يوجد موظفون</div><div style="margin-top:12px"><button onclick="openModal('employee-modal')" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة موظف</button></div></div>`
+        : employees.map(e => {
+          const basic = Number(e.basicSalary||0);
+          const housing = Number(e.housingAllowance||0);
+          const trans = Number(e.transportAllowance||0);
+          const gosiEmp = (basic + housing) * 0.1;
+          const gosiEmp2 = (basic + housing) * 0.1175;
+          const net = basic + housing + trans - gosiEmp;
+          return `<div class="list-item" onclick="viewEmployee('${e.id}')">
+            <div class="list-avatar" style="background:rgba(200,150,60,0.1);color:var(--primary);font-weight:700">${(e.nameAr||'?').charAt(0)}</div>
+            <div class="list-info">
+              <div class="list-name">${e.nameAr||e.name||'-'}</div>
+              <div class="list-sub">${e.position||'-'} • ${e.nationality||'-'}</div>
+            </div>
+            <div style="text-align:left">
+              <div style="font-size:12px;font-weight:700;color:var(--green)">${Math.round(net).toLocaleString()} ر.س</div>
+              <div style="font-size:10px;color:var(--text3)">صافي</div>
+            </div>
+          </div>`;
+        }).join('')}
+    </div>
+
+    <!-- Run Payroll -->
+    ${canRunPayroll() ? `
+    <div class="section-title">⚡ تشغيل الرواتب</div>
+    <div class="list-card" style="padding:16px;margin-bottom:14px">
+      <div class="form-group">
+        <label class="form-label">شهر الرواتب</label>
+        <input class="form-input" type="month" id="payroll-month" value="${new Date().toISOString().slice(0,7)}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button class="btn-primary" onclick="runPayroll()">⚡ تشغيل الرواتب</button>
+        <button class="btn-secondary" onclick="exportWPS()">📤 تصدير WPS</button>
+      </div>
+    </div>` : ''}
+
+    <!-- Payroll History -->
+    ${payrollRuns.length > 0 ? `
+    <div class="section-title">📋 سجل الرواتب</div>
+    <div class="list-card">
+      ${payrollRuns.slice(-5).reverse().map(r => `
+        <div class="list-item">
+          <div class="list-avatar" style="background:rgba(34,197,94,0.1)">📋</div>
+          <div class="list-info">
+            <div class="list-name">رواتب ${r.month}</div>
+            <div class="list-sub">${r.employeeCount} موظف • ${new Date(r.date).toLocaleDateString('ar-SA')}</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:12px;font-weight:700;color:var(--green)">${Number(r.totalNet||0).toLocaleString()} ر.س</div>
+            <span class="badge b-green">✅ مُصرف</span>
+          </div>
+        </div>`).join('')}
+    </div>` : ''}`;
+}
+
+async function viewEmployee(id) {
+  const employees = await dbGetAll('employees') || [];
+  const e = employees.find(x => x.id === id);
+  if (!e) return;
+  const basic = Number(e.basicSalary||0);
+  const housing = Number(e.housingAllowance||0);
+  const trans = Number(e.transportAllowance||0);
+  const other = Number(e.otherAllowances||0);
+  const gross = basic + housing + trans + other;
+  const gosiEmployee = (basic + housing) * 0.1;
+  const gosiEmployer = (basic + housing) * 0.1175;
+  const net = gross - gosiEmployee;
+  const eosb = Math.round((basic / 12) * Number(e.yearsOfService||0));
+
+  document.getElementById('main-content').innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:900;color:var(--primary)">${e.nameAr||e.name}</div>
+      <div style="font-size:12px;color:var(--text3)">${e.position||'-'} • ${e.department||'-'} • ${e.nationality||'-'}</div>
+      ${e.iqamaNumber?`<div style="font-size:11px;color:var(--text3)">رقم الإقامة: ${e.iqamaNumber}</div>`:''}
+      ${e.iban?`<div style="font-size:11px;color:var(--text3)">IBAN: ${e.iban}</div>`:''}
+    </div>
+    <div class="list-card" style="padding:0">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px">💰 تفاصيل الراتب</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+          <div>الراتب الأساسي</div><div style="text-align:left;font-weight:700">${basic.toLocaleString()} ر.س</div>
+          <div>بدل السكن</div><div style="text-align:left">${housing.toLocaleString()} ر.س</div>
+          <div>بدل النقل</div><div style="text-align:left">${trans.toLocaleString()} ر.س</div>
+          ${other?`<div>بدلات أخرى</div><div style="text-align:left">${other.toLocaleString()} ر.س</div>`:''}
+          <div style="color:var(--text3)">إجمالي المستحقات</div><div style="text-align:left;color:var(--primary)">${gross.toLocaleString()} ر.س</div>
+        </div>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">🏛️ الاستقطاعات</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+          <div>GOSI موظف (10%)</div><div style="text-align:left;color:var(--red)">${Math.round(gosiEmployee).toLocaleString()} ر.س</div>
+          <div style="color:var(--text3)">GOSI صاحب عمل (11.75%)</div><div style="text-align:left;color:var(--text3)">${Math.round(gosiEmployer).toLocaleString()} ر.س</div>
+        </div>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900">
+          <span>صافي الراتب</span><span style="color:var(--green)">${Math.round(net).toLocaleString()} ر.س</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px">
+        <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">📊 مكافأة نهاية الخدمة (EOSB)</div>
+        <div style="font-size:12px">${e.yearsOfService||0} سنة خدمة → <strong style="color:var(--blue)">${eosb.toLocaleString()} ر.س</strong></div>
+      </div>
+    </div>
+    <button onclick="showPage('payroll')" class="btn-secondary" style="margin-top:12px">← رجوع</button>`;
+}
+
+async function saveEmployee() {
+  const nameAr = document.getElementById('emp-name-ar').value;
+  if (!nameAr) { alert('يرجى إدخال اسم الموظف'); return; }
+  const e = {
+    id: 'local_' + Date.now(),
+    nameAr,
+    nameEn: document.getElementById('emp-name-en').value,
+    position: document.getElementById('emp-position').value,
+    department: document.getElementById('emp-dept').value,
+    nationality: document.getElementById('emp-nationality').value,
+    iqamaNumber: document.getElementById('emp-iqama').value,
+    iban: document.getElementById('emp-iban').value,
+    basicSalary: parseFloat(document.getElementById('emp-basic').value)||0,
+    housingAllowance: parseFloat(document.getElementById('emp-housing').value)||0,
+    transportAllowance: parseFloat(document.getElementById('emp-transport').value)||0,
+    otherAllowances: parseFloat(document.getElementById('emp-other').value)||0,
+    yearsOfService: parseFloat(document.getElementById('emp-years').value)||0,
+    hireDate: document.getElementById('emp-hire').value,
+    isActive: true,
+    _pending: true
+  };
+  await dbPut('employees', e);
+  closeModal('employee-modal');
+  alert('✅ تم إضافة الموظف!');
+  renderPayroll();
+}
+
+async function runPayroll() {
+  const employees = await dbGetAll('employees') || [];
+  if (!employees.length) { alert('لا يوجد موظفون'); return; }
+  const month = document.getElementById('payroll-month').value;
+  if (!month) { alert('يرجى اختيار الشهر'); return; }
+
+  let totalNet = 0, totalGross = 0, totalGOSI = 0;
+  employees.forEach(e => {
+    const basic = Number(e.basicSalary||0);
+    const housing = Number(e.housingAllowance||0);
+    const trans = Number(e.transportAllowance||0);
+    const other = Number(e.otherAllowances||0);
+    const gross = basic + housing + trans + other;
+    const gosiEmp = (basic + housing) * 0.1;
+    const gosiEmployer = (basic + housing) * 0.1175;
+    totalGross += gross;
+    totalNet += gross - gosiEmp;
+    totalGOSI += gosiEmployer;
+  });
+
+  const run = {
+    id: 'payroll_' + Date.now(),
+    month,
+    date: new Date().toISOString(),
+    employeeCount: employees.length,
+    totalGross: Math.round(totalGross),
+    totalNet: Math.round(totalNet),
+    totalGOSI: Math.round(totalGOSI),
+    status: 'PAID'
+  };
+
+  if (!db.objectStoreNames.contains('payroll_runs')) {
+    alert('✅ تم احتساب الرواتب!
+إجمالي: ' + Math.round(totalGross).toLocaleString() + ' ر.س
+صافي: ' + Math.round(totalNet).toLocaleString() + ' ر.س
+GOSI: ' + Math.round(totalGOSI).toLocaleString() + ' ر.س');
+    return;
+  }
+  await dbPut('payroll_runs', run);
+  alert('✅ تم تشغيل الرواتب!
+إجمالي: ' + Math.round(totalGross).toLocaleString() + ' ر.س
+صافي: ' + Math.round(totalNet).toLocaleString() + ' ر.س
+GOSI: ' + Math.round(totalGOSI).toLocaleString() + ' ر.س');
+  renderPayroll();
+}
+
+async function exportWPS() {
+  const employees = await dbGetAll('employees') || [];
+  if (!employees.length) { alert('لا يوجد موظفون'); return; }
+  const month = document.getElementById('payroll-month')?.value || new Date().toISOString().slice(0,7);
+
+  const rows = employees.map(e => {
+    const basic = Number(e.basicSalary||0);
+    const housing = Number(e.housingAllowance||0);
+    const trans = Number(e.transportAllowance||0);
+    const gosiEmp = (basic + housing) * 0.1;
+    const net = basic + housing + trans - gosiEmp;
+    return [e.nameAr||e.name, e.iban||'', Math.round(net), month, 'SAR'];
+  });
+
+  const csv = [
+    ['اسم الموظف','رقم IBAN','صافي الراتب','شهر الصرف','العملة'],
+    ...rows
+  ].map(r => r.map(v => '"'+String(v)+'"').join(',')).join('
+');
+
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'WPS-' + month + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  alert('✅ تم تصدير ملف WPS!');
+}
+
+// ════════════════════════════════════════
+// VENDORS - الموردون
+// ════════════════════════════════════════
+async function renderVendors() {
+  if (!canManageVendors()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية إدارة الموردين</div></div>';
+    return;
+  }
+  const vendors = await dbGetAll('vendors') || [];
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">🤝 الموردون</div>
+      <div class="page-sub">${vendors.length} مورد</div>
+    </div>
+    <div class="section-title">
+      <span>🤝 قائمة الموردين</span>
+      ${canManageVendors()?'<span class="section-more" onclick="openModal('vendor-modal')">+ مورد جديد</span>':''}
+    </div>
+    <div class="list-card">
+      ${vendors.length===0?`<div class="empty-state"><div class="empty-icon">🤝</div><div>لا يوجد موردون</div><div style="margin-top:12px"><button onclick="openModal('vendor-modal')" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة مورد</button></div></div>`
+        :vendors.map(v=>`<div class="list-item" onclick="viewVendor('${v.id}')">
+          <div class="list-avatar" style="background:rgba(200,150,60,0.1);color:var(--primary);font-weight:700;font-size:16px">${(v.name||'?').charAt(0)}</div>
+          <div class="list-info">
+            <div class="list-name">${v.name}</div>
+            <div class="list-sub">${v.phone||''} ${v.vatNumber?'• VAT: '+v.vatNumber:''}</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:11px;color:var(--text3)">${v.balance?Number(v.balance).toLocaleString()+' ر.س':'-'}</div>
+            <span class="badge ${v.isActive!==false?'b-green':'b-red'}">${v.isActive!==false?'نشط':'موقوف'}</span>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function viewVendor(id) {
+  const vendors = await dbGetAll('vendors') || [];
+  const v = vendors.find(x=>x.id===id);
+  if (!v) return;
+  const purchases = (await dbGetAll('purchases') || []).filter(p=>p.vendorId===id);
+  const totalPurchases = purchases.reduce((s,p)=>s+Number(p.total||0),0);
+  document.getElementById('main-content').innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:900;color:var(--primary)">${v.name}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.phone||''} • ${v.email||''}</div>
+      ${v.vatNumber?`<div style="font-size:11px;color:var(--text3)">الرقم الضريبي: ${v.vatNumber}</div>`:''}
+    </div>
+    <div class="stat-grid" style="margin-bottom:12px">
+      <div class="stat-card"><div class="stat-icon">🛒</div><div class="stat-value" style="color:var(--primary)">${purchases.length}</div><div class="stat-label">أوامر الشراء</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" style="color:var(--red);font-size:14px">${totalPurchases.toLocaleString()}</div><div class="stat-label">إجمالي المشتريات</div></div>
+    </div>
+    <button onclick="showPage('vendors')" class="btn-secondary">← رجوع</button>`;
+}
+
+async function saveVendor() {
+  const name = document.getElementById('vendor-name').value;
+  if (!name) { alert('يرجى إدخال اسم المورد'); return; }
+  const v = {
+    id: 'local_'+Date.now(),
+    name,
+    phone: document.getElementById('vendor-phone').value,
+    email: document.getElementById('vendor-email').value,
+    vatNumber: document.getElementById('vendor-vat').value,
+    crNumber: document.getElementById('vendor-cr').value,
+    address: document.getElementById('vendor-address').value,
+    balance: 0,
+    isActive: true,
+    _pending: true
+  };
+  if (!db.objectStoreNames.contains('vendors')) {
+    alert('يرجى إعادة تحميل الصفحة لتفعيل قاعدة بيانات الموردين');
+    return;
+  }
+  await dbPut('vendors', v);
+  closeModal('vendor-modal');
+  ['vendor-name','vendor-phone','vendor-email','vendor-vat','vendor-cr','vendor-address'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  alert('✅ تم إضافة المورد!');
+  renderVendors();
+}
+
+// ════════════════════════════════════════
+// PURCHASE ORDERS - أوامر الشراء
+// ════════════════════════════════════════
+async function renderPurchases() {
+  if (!canManagePurchases()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية إدارة المشتريات</div></div>';
+    return;
+  }
+  const purchases = await dbGetAll('purchases') || [];
+  const vendors = await dbGetAll('vendors') || [];
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
+  const sorted = purchases.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  const totalPending = purchases.filter(p=>p.status==='PENDING').reduce((s,p)=>s+Number(p.total||0),0);
+  const totalApproved = purchases.filter(p=>p.status==='APPROVED').reduce((s,p)=>s+Number(p.total||0),0);
+
+  const statusMap = {
+    PENDING:{label:'قيد الانتظار',cls:'b-gold'},
+    APPROVED:{label:'معتمد',cls:'b-green'},
+    RECEIVED:{label:'مستلم',cls:'b-blue'},
+    CANCELLED:{label:'ملغي',cls:'b-red'}
+  };
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">🛒 أوامر الشراء</div>
+      <div class="page-sub">${purchases.length} أمر شراء</div>
+    </div>
+    <div class="stat-grid" style="margin-bottom:14px">
+      <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" style="color:var(--primary);font-size:14px">${totalPending.toLocaleString()}</div><div class="stat-label">قيد الانتظار</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" style="color:var(--green);font-size:14px">${totalApproved.toLocaleString()}</div><div class="stat-label">معتمد</div></div>
+    </div>
+    <div class="section-title">
+      <span>🛒 قائمة المشتريات</span>
+      ${canManagePurchases()?'<span class="section-more" onclick="openModal('purchase-modal')">+ أمر جديد</span>':''}
+    </div>
+    <div class="list-card">
+      ${sorted.length===0?`<div class="empty-state"><div class="empty-icon">🛒</div><div>لا توجد أوامر شراء</div><div style="margin-top:12px"><button onclick="openModal('purchase-modal')" class="btn-primary" style="width:auto;padding:10px 20px">+ أمر شراء جديد</button></div></div>`
+        :sorted.map(p=>{
+          const vendor = vendors.find(v=>v.id===p.vendorId);
+          return `<div class="list-item">
+            <div class="list-avatar" style="background:rgba(200,150,60,0.1)">🛒</div>
+            <div class="list-info">
+              <div class="list-name">${p.poNumber||'PO-'+p.id?.slice(-4)}</div>
+              <div class="list-sub">${vendor?.name||'مورد غير محدد'} • ${p.date?new Date(p.date).toLocaleDateString():''}</div>
+            </div>
+            <div style="text-align:left">
+              <div class="list-amount">${Number(p.total||0).toLocaleString()}</div>
+              <span class="badge ${statusMap[p.status]?.cls||'b-gold'}">${statusMap[p.status]?.label||p.status}</span>
+            </div>
+          </div>`;
+        }).join('')}
+    </div>`;
+}
+
+async function loadVendorsSelect() {
+  const vendors = await dbGetAll('vendors') || [];
+  const select = document.getElementById('po-vendor');
+  if (!select || select.options.length > 1) return;
+  vendors.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.id;
+    opt.textContent = v.name;
+    select.appendChild(opt);
+  });
+}
+
+async function savePurchase() {
+  const vendorId = document.getElementById('po-vendor').value;
+  const items = document.getElementById('po-items').value;
+  const total = parseFloat(document.getElementById('po-total').value);
+  const notes = document.getElementById('po-notes').value;
+  if (!vendorId) { alert('يرجى اختيار المورد'); return; }
+  if (!total || total <= 0) { alert('يرجى إدخال المبلغ'); return; }
+  
+  const vendors = await dbGetAll('vendors') || [];
+  const poCount = (await dbGetAll('purchases') || []).length;
+  
+  const po = {
+    id: 'local_'+Date.now(),
+    poNumber: 'PO-' + String(poCount+1).padStart(4,'0'),
+    vendorId,
+    items: items ? [{name:items, quantity:1, unitPrice:total, total}] : [],
+    total,
+    vatAmount: total * 0.15,
+    notes,
+    status: 'PENDING',
+    date: new Date().toISOString(),
+    _pending: true
+  };
+  
+  await dbPut('purchases', po);
+  closeModal('purchase-modal');
+  ['po-vendor','po-items','po-total','po-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  alert('✅ تم إنشاء أمر الشراء!');
+  renderPurchases();
 }
 
 // ════════════════════════════════════════
@@ -1938,7 +2401,7 @@ function initDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = e => {
       const d = e.target.result;
-      ['invoices','customers','expenses','products','accounts','employees','pending','settings'].forEach(s => {
+      ['invoices','customers','expenses','products','accounts','employees','pending','settings','vendors','purchases','payroll_runs'].forEach(s => {
         if (!d.objectStoreNames.contains(s)) {
           d.createObjectStore(s, s === 'pending' ? { keyPath:'id', autoIncrement:true } : { keyPath:'id' });
         }
@@ -2183,6 +2646,9 @@ function showPage(page) {
   else if (page === 'ledger') renderLedger();
   else if (page === 'customize') renderCustomize();
   else if (page === 'bi') renderBI();
+  else if (page === 'vendors') renderVendors();
+  else if (page === 'purchases') renderPurchases();
+  else if (page === 'payroll') renderPayroll();
 }
 
 function toggleMore() {
@@ -3553,6 +4019,70 @@ async function deleteProduct(id) {
     <div class="form-group"><label class="form-label">الحد الأدنى للمخزون</label><input class="form-input" id="edit-prod-min" type="number"></div>
     <button class="btn-primary" onclick="saveEditProduct()" style="margin-bottom:8px">💾 حفظ</button>
     <button class="btn-secondary" onclick="closeModal('edit-product-modal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- EMPLOYEE MODAL -->
+<div class="modal" id="employee-modal">
+  <div class="modal-content" style="max-height:90vh;overflow-y:auto">
+    <div class="modal-header"><div class="modal-title">👤 موظف جديد</div><div class="modal-close" onclick="closeModal('employee-modal')">✕</div></div>
+    <div class="form-group"><label class="form-label">الاسم بالعربي</label><input class="form-input" id="emp-name-ar" type="text" placeholder="الاسم الكامل"></div>
+    <div class="form-group"><label class="form-label">الاسم بالإنجليزي</label><input class="form-input" id="emp-name-en" type="text"></div>
+    <div class="form-group"><label class="form-label">المسمى الوظيفي</label><input class="form-input" id="emp-position" type="text"></div>
+    <div class="form-group"><label class="form-label">القسم</label><input class="form-input" id="emp-dept" type="text"></div>
+    <div class="form-group"><label class="form-label">الجنسية</label>
+      <select class="form-input" id="emp-nationality">
+        <option value="سعودي">سعودي</option>
+        <option value="مصري">مصري</option>
+        <option value="هندي">هندي</option>
+        <option value="باكستاني">باكستاني</option>
+        <option value="يمني">يمني</option>
+        <option value="أخرى">أخرى</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">رقم الإقامة / الهوية</label><input class="form-input" id="emp-iqama" type="text"></div>
+    <div class="form-group"><label class="form-label">IBAN (للـ WPS)</label><input class="form-input" id="emp-iban" type="text" placeholder="SA..."></div>
+    <div class="form-group"><label class="form-label">الراتب الأساسي (ر.س)</label><input class="form-input" id="emp-basic" type="number" min="0"></div>
+    <div class="form-group"><label class="form-label">بدل السكن (ر.س)</label><input class="form-input" id="emp-housing" type="number" min="0" value="0"></div>
+    <div class="form-group"><label class="form-label">بدل النقل (ر.س)</label><input class="form-input" id="emp-transport" type="number" min="0" value="0"></div>
+    <div class="form-group"><label class="form-label">بدلات أخرى (ر.س)</label><input class="form-input" id="emp-other" type="number" min="0" value="0"></div>
+    <div class="form-group"><label class="form-label">تاريخ التعيين</label><input class="form-input" id="emp-hire" type="date"></div>
+    <div class="form-group"><label class="form-label">سنوات الخدمة</label><input class="form-input" id="emp-years" type="number" min="0" value="0"></div>
+    <button class="btn-primary" onclick="saveEmployee()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('employee-modal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- VENDOR MODAL -->
+<div class="modal" id="vendor-modal">
+  <div class="modal-content">
+    <div class="modal-header"><div class="modal-title">🤝 مورد جديد</div><div class="modal-close" onclick="closeModal('vendor-modal')">✕</div></div>
+    <div class="form-group"><label class="form-label">اسم المورد</label><input class="form-input" id="vendor-name" type="text" placeholder="اسم الشركة أو المورد"></div>
+    <div class="form-group"><label class="form-label">الهاتف</label><input class="form-input" id="vendor-phone" type="tel"></div>
+    <div class="form-group"><label class="form-label">البريد الإلكتروني</label><input class="form-input" id="vendor-email" type="email"></div>
+    <div class="form-group"><label class="form-label">الرقم الضريبي</label><input class="form-input" id="vendor-vat" type="text" placeholder="310xxxxxxxxx"></div>
+    <div class="form-group"><label class="form-label">السجل التجاري</label><input class="form-input" id="vendor-cr" type="text"></div>
+    <div class="form-group"><label class="form-label">العنوان</label><input class="form-input" id="vendor-address" type="text"></div>
+    <button class="btn-primary" onclick="saveVendor()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('vendor-modal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- PURCHASE ORDER MODAL -->
+<div class="modal" id="purchase-modal">
+  <div class="modal-content">
+    <div class="modal-header"><div class="modal-title">🛒 أمر شراء جديد</div><div class="modal-close" onclick="closeModal('purchase-modal')">✕</div></div>
+    <div class="form-group">
+      <label class="form-label">المورد</label>
+      <select class="form-input" id="po-vendor" onclick="loadVendorsSelect()">
+        <option value="">اختر المورد...</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">المواد / الخدمات</label><input class="form-input" id="po-items" type="text" placeholder="وصف ما تريد شراءه"></div>
+    <div class="form-group"><label class="form-label">المبلغ الإجمالي (ر.س)</label><input class="form-input" id="po-total" type="number" min="0"></div>
+    <div class="form-group"><label class="form-label">ملاحظات</label><input class="form-input" id="po-notes" type="text"></div>
+    <button class="btn-primary" onclick="savePurchase()" style="margin-bottom:8px">💾 حفظ</button>
+    <button class="btn-secondary" onclick="closeModal('purchase-modal')">إلغاء</button>
   </div>
 </div>
 
