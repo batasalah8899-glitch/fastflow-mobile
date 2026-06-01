@@ -35,6 +35,38 @@
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); direction:rtl; overflow-x:hidden; transition:background 0.3s; }
 
+/* ═══════════════ LANDING ═══════════════ */
+#landing-screen { display:none; min-height:100vh; background:#080c14; color:#fff; font-family:'Cairo',sans-serif; overflow-y:auto; }
+.land-nav { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.land-logo { display:flex; align-items:center; gap:10px; }
+.land-logo-mark { width:38px; height:38px; background:linear-gradient(135deg,#c8963c,#e8b84b); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#080c14; }
+.land-logo-name { font-size:18px; font-weight:700; color:#fff; }
+.land-logo-sub { font-size:10px; color:#8896a8; letter-spacing:2px; text-transform:uppercase; }
+.land-btn-login { background:rgba(200,150,60,0.15); border:1px solid rgba(200,150,60,0.3); color:#c8963c; padding:8px 20px; border-radius:8px; font-size:13px; cursor:pointer; font-family:'Cairo',sans-serif; font-weight:700; }
+.land-hero { text-align:center; padding:60px 20px 40px; max-width:700px; margin:0 auto; }
+.land-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(200,150,60,0.08); border:1px solid rgba(200,150,60,0.2); padding:6px 16px; border-radius:20px; font-size:12px; color:#c8963c; margin-bottom:20px; }
+.land-badge-dot { width:6px; height:6px; background:#c8963c; border-radius:50%; display:inline-block; }
+.land-tagline { font-size:13px; color:#c8963c; font-weight:700; letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; }
+.land-title { font-size:42px; font-weight:900; line-height:1.1; letter-spacing:-1px; margin-bottom:14px; color:#fff; }
+.land-title span { color:#c8963c; }
+.land-sub { font-size:14px; color:#8896a8; line-height:1.7; margin-bottom:28px; }
+.land-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.land-btn-primary { background:linear-gradient(135deg,#c8963c,#e8b84b); border:none; color:#080c14; padding:13px 30px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Cairo',sans-serif; }
+.land-btn-secondary { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:13px 30px; border-radius:10px; font-size:14px; cursor:pointer; font-family:'Cairo',sans-serif; }
+.land-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:0 20px 40px; max-width:800px; margin:0 auto; }
+.land-kpi { background:#0d1220; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:16px; text-align:center; }
+.land-kpi-val { font-size:22px; font-weight:900; margin-bottom:4px; }
+.land-kpi-lbl { font-size:10px; color:#8896a8; }
+.land-modules { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:0 20px 40px; max-width:800px; margin:0 auto; }
+.land-mod { background:#0d1220; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px; transition:border-color 0.2s; cursor:pointer; }
+.land-mod:hover { border-color:rgba(200,150,60,0.4); }
+.land-mod-icon { font-size:22px; margin-bottom:8px; }
+.land-mod-name { font-size:12px; font-weight:700; color:#fff; margin-bottom:3px; }
+.land-mod-desc { font-size:10px; color:#8896a8; }
+.land-footer { text-align:center; padding:24px; border-top:1px solid rgba(255,255,255,0.06); color:#8896a8; font-size:11px; }
+.land-footer-badges { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+.land-fbadge { font-size:10px; color:#8896a8; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); padding:3px 10px; border-radius:20px; }
+
 /* ═══════════════ LOGIN ═══════════════ */
 #login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(135deg,var(--bg),var(--bg2)); }
 .login-card { background:var(--bg2); border:1px solid var(--border); border-radius:24px; padding:32px 24px; width:100%; max-width:380px; }
@@ -172,6 +204,56 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
 
 <!-- RECORD INDICATOR -->
 <div id="record-indicator">🔴 جاري التسجيل...</div>
+
+<!-- ═══════════════ LANDING ═══════════════ -->
+<div id="landing-screen">
+  <div class="land-nav">
+    <div class="land-logo">
+      <div class="land-logo-mark">N</div>
+      <div>
+        <div class="land-logo-name">Nobo ERP</div>
+        <div class="land-logo-sub">Advanced Resource Platform</div>
+      </div>
+    </div>
+    <button class="land-btn-login" onclick="showLoginFromLanding()">تسجيل الدخول →</button>
+  </div>
+  <div class="land-hero">
+    <div class="land-badge"><span class="land-badge-dot"></span> Arabic AI SaaS ERP · Saudi & Gulf Ready</div>
+    <div class="land-tagline">Deep. Smart. Relentless.</div>
+    <div class="land-title">منصة واحدة<br><span>تحكم كامل</span></div>
+    <div class="land-sub">إدارة أعمالك بالكامل — فواتير، محاسبة، مخزون، عملاء، تقارير<br>متوافق مع ZATCA · يعمل بدون إنترنت · 33 قطاع</div>
+    <div class="land-btns">
+      <button class="land-btn-primary" onclick="showRegisterFromLanding()">ابدأ مجاناً</button>
+      <button class="land-btn-secondary" onclick="showLoginFromLanding()">تسجيل الدخول</button>
+    </div>
+  </div>
+  <div class="land-kpis">
+    <div class="land-kpi"><div class="land-kpi-val" style="color:#c8963c">33</div><div class="land-kpi-lbl">قطاع نشاط</div></div>
+    <div class="land-kpi"><div class="land-kpi-val" style="color:#22c55e">18</div><div class="land-kpi-lbl">موديول مكتمل</div></div>
+    <div class="land-kpi"><div class="land-kpi-val" style="color:#60a5fa">46</div><div class="land-kpi-lbl">API Endpoint</div></div>
+    <div class="land-kpi"><div class="land-kpi-val" style="color:#a78bfa">10</div><div class="land-kpi-lbl">لغة مدعومة</div></div>
+  </div>
+  <div class="land-modules">
+    <div class="land-mod"><div class="land-mod-icon">🧾</div><div class="land-mod-name">فواتير ZATCA</div><div class="land-mod-desc">QR · Double Entry · VAT 15%</div></div>
+    <div class="land-mod"><div class="land-mod-icon">📦</div><div class="land-mod-name">المخزون</div><div class="land-mod-desc">إضافة · سحب · مرتجع</div></div>
+    <div class="land-mod"><div class="land-mod-icon">💰</div><div class="land-mod-name">المحاسبة</div><div class="land-mod-desc">P&L · Cash Flow · ميزان</div></div>
+    <div class="land-mod"><div class="land-mod-icon">💬</div><div class="land-mod-name">واتساب</div><div class="land-mod-desc">إرسال فواتير مباشرة</div></div>
+    <div class="land-mod"><div class="land-mod-icon">🔒</div><div class="land-mod-name">الصلاحيات</div><div class="land-mod-desc">RBAC · 6 أدوار</div></div>
+    <div class="land-mod"><div class="land-mod-icon">📊</div><div class="land-mod-name">التقارير</div><div class="land-mod-desc">لحظية · تفصيلية</div></div>
+    <div class="land-mod"><div class="land-mod-icon">🌍</div><div class="land-mod-name">متعدد اللغات</div><div class="land-mod-desc">10 لغات · RTL/LTR</div></div>
+    <div class="land-mod"><div class="land-mod-icon">📱</div><div class="land-mod-name">Offline First</div><div class="land-mod-desc">يعمل بدون إنترنت</div></div>
+  </div>
+  <div class="land-footer">
+    <div>⚡ Nobo ERP · Deep. Smart. Relentless.</div>
+    <div class="land-footer-badges">
+      <span class="land-fbadge">ZATCA ✓</span>
+      <span class="land-fbadge">Offline First ✓</span>
+      <span class="land-fbadge">Saudi Ready ✓</span>
+      <span class="land-fbadge">RBAC ✓</span>
+      <span class="land-fbadge">Redis ✓</span>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════ LOGIN ═══════════════ -->
 <div id="login-screen">
@@ -639,6 +721,27 @@ function applyTheme(theme) {
 // ════════════════════════════════════════
 // LANGUAGE
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+// LANDING PAGE
+// ════════════════════════════════════════
+function showLanding() {
+  document.getElementById('landing-screen').style.display = 'block';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('register-screen').style.display = 'none';
+  document.getElementById('sector-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'none';
+}
+
+function showLoginFromLanding() {
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showRegisterFromLanding() {
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('register-screen').style.display = 'flex';
+}
+
 function toggleLangPicker() {
   const picker = document.getElementById('lang-picker');
   const arrow = document.getElementById('lang-arrow');
@@ -2035,6 +2138,13 @@ document.addEventListener('click', e => {
   }
 
   await initDB();
+
+  // Show landing if not logged in
+  const savedToken2 = localStorage.getItem('ff_token');
+  if (!savedToken2) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('landing-screen').style.display = 'block';
+  }
 
   // Set globe on load
   const flags = {ar:'🇸🇦',en:'🇺🇸',ur:'🇵🇰',hi:'🇮🇳',bn:'🇧🇩',tl:'🇵🇭',id:'🇮🇩',fr:'🇫🇷',tr:'🇹🇷',zh:'🇨🇳'};
