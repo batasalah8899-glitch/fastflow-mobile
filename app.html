@@ -1687,6 +1687,8 @@ function showAddStock(productId, type) {
 async function saveStockMovement() {
   const productId = document.getElementById('stock-product-id').value;
   const type = document.getElementById('stock-type').value;
+  if (type === 'RETURN' && !canReturn()) { alert('❌ ليس لديك صلاحية المرتجع'); return; }
+  if (type === 'OUT' && !canCreate()) { alert('❌ ليس لديك صلاحية سحب المخزون'); return; }
   const quantity = parseFloat(document.getElementById('stock-qty').value);
   const unitCost = parseFloat(document.getElementById('stock-cost').value) || 0;
   const reason = document.getElementById('stock-reason').value;
@@ -1794,6 +1796,10 @@ async function renderEmployees() {
 }
 
 async function renderReports() {
+  if (!canViewFinancials()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية عرض التقارير المالية</div></div>';
+    return;
+  }
   const activeSector = localStorage.getItem('ff_sector') || 'general';
   const [allInv, expenses] = await Promise.all([dbGetAll('invoices'), dbGetAll('expenses')]);
   const invoices = allInv.filter(i => i.sector === activeSector);
@@ -1802,6 +1808,7 @@ async function renderReports() {
   const totalExp = expenses.reduce((s,e)=>s+Number(e.amount||0),0);
   document.getElementById('main-content').innerHTML = `
     <div class="page-header"><div class="page-title">📈 ${t('reports')}</div></div>
+    ${canExport() ? `<button onclick="exportReports()" style="background:rgba(200,150,60,0.15);border:1px solid rgba(200,150,60,0.3);border-radius:10px;padding:10px 16px;color:var(--primary);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;width:100%">📤 تصدير التقارير</button>` : ''}
     <div class="list-card" style="margin-bottom:14px"><div style="padding:14px">
       <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px">📊 قائمة الدخل</div>
       <div class="total-row"><span>الإيرادات</span><span style="color:var(--green)">${revenue.toLocaleString()} ر.س</span></div>
@@ -1973,6 +1980,7 @@ async function viewInvoice(id) {
 }
 
 async function printInvoice(id) {
+  if (!canPrint()) { alert('❌ ليس لديك صلاحية الطباعة'); return; }
   const invoices = await dbGetAll('invoices');
   const inv = invoices.find(i => i.id === id);
   if (!inv) return;
@@ -2168,6 +2176,7 @@ function addItem() {
 }
 
 async function saveInvoice() {
+  if (!canCreate()) { alert('❌ ليس لديك صلاحية إنشاء فاتورة'); return; }
   const clientName = document.getElementById('inv-client').value;
   if (!clientName) { alert('يرجى إدخال اسم العميل'); return; }
   const items = [];
@@ -2204,6 +2213,7 @@ async function saveInvoice() {
 }
 
 async function saveCustomer() {
+  if (!canCreate()) { alert('❌ ليس لديك صلاحية إضافة عميل'); return; }
   const name = document.getElementById('cust-name').value;
   if (!name) { alert('يرجى إدخال الاسم'); return; }
   const c = {id:'local_'+Date.now(), name, phone:document.getElementById('cust-phone').value, email:document.getElementById('cust-email').value, vatNumber:document.getElementById('cust-vat').value, _pending:true};
@@ -2214,6 +2224,7 @@ async function saveCustomer() {
 }
 
 async function saveExpense() {
+  if (!canCreate()) { alert('❌ ليس لديك صلاحية إضافة مصروف'); return; }
   const title = document.getElementById('exp-title').value;
   const amount = parseFloat(document.getElementById('exp-amount').value);
   if (!title||!amount) { alert('يرجى إدخال العنوان والمبلغ'); return; }
@@ -2225,6 +2236,7 @@ async function saveExpense() {
 }
 
 async function saveProduct() {
+  if (!canCreate()) { alert('❌ ليس لديك صلاحية إضافة منتج'); return; }
   const name = document.getElementById('prod-name').value;
   if (!name) { alert('يرجى إدخال الاسم'); return; }
   const currentSector = localStorage.getItem('ff_sector') || 'general';
@@ -2395,6 +2407,7 @@ async function editInvoice(id) {
 }
 
 async function updateInvoice() {
+  if (!canEdit()) { alert('❌ ليس لديك صلاحية تعديل الفاتورة'); return; }
   const id = document.getElementById('edit-inv-id').value;
   const status = document.getElementById('edit-inv-status').value;
   const paymentMethod = document.getElementById('edit-inv-payment') ? document.getElementById('edit-inv-payment').value : '';
@@ -2479,6 +2492,7 @@ async function editProduct(id) {
 }
 
 async function saveEditProduct() {
+  if (!canEdit()) { alert('❌ ليس لديك صلاحية تعديل المنتج'); return; }
   const id = document.getElementById('edit-prod-id').value;
   const name = document.getElementById('edit-prod-name').value;
   const sku = document.getElementById('edit-prod-sku').value;
