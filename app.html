@@ -882,22 +882,19 @@ async function sendAIMessage() {
   document.getElementById('ai-messages').appendChild(loadDiv);
   
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const data = await apiCall('/ai/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: aiHistory
-      })
+      body: JSON.stringify({ messages: aiHistory, systemPrompt })
     });
-    const data = await res.json();
     document.getElementById('ai-loading')?.remove();
     
-    const reply = data.content?.[0]?.text || 'عذراً، حدث خطأ. حاول مرة أخرى.';
-    aiHistory.push({ role: 'assistant', content: reply });
-    addAIMessage('assistant', reply);
+    if (data.success) {
+      const reply = data.data.reply || 'عذراً، حدث خطأ.';
+      aiHistory.push({ role: 'assistant', content: reply });
+      addAIMessage('assistant', reply);
+    } else {
+      addAIMessage('assistant', '❌ ' + (data.error || 'حدث خطأ. حاول مرة أخرى.'));
+    }
   } catch(e) {
     document.getElementById('ai-loading')?.remove();
     addAIMessage('assistant', '❌ تعذر الاتصال. تأكد من الإنترنت وحاول مرة أخرى.');
