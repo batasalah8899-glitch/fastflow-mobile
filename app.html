@@ -447,6 +447,7 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
     <div class="more-item" onclick="showPage('accounts');toggleMore()"><span class="more-icon">🌳</span><span id="more-lbl-accounts">الحسابات</span></div>
     <div class="more-item" onclick="showPage('employees');toggleMore()"><span class="more-icon">👤</span><span id="more-lbl-employees">الموظفون</span></div>
     <div class="more-item" onclick="showPage('settings');toggleMore()"><span class="more-icon">⚙️</span><span id="more-lbl-settings">الإعدادات</span></div>
+    <div class="more-item" onclick="openAICopilot();toggleMore()"><span class="more-icon">🤖</span><span style="color:#c8963c">AI Copilot</span></div>
     <div class="more-item" onclick="doLogout()"><span class="more-icon">🚪</span><span id="more-lbl-logout" style="color:var(--red)">خروج</span></div>
   </div>
 </div>
@@ -813,6 +814,94 @@ function updateNavLabels() {
 function changeLang(lang) {
   setLoginLang(lang);
   showPage(currentPage);
+}
+
+// ════════════════════════════════════════
+// AI COPILOT
+// ════════════════════════════════════════
+let aiHistory = [];
+
+function openAICopilot() {
+  openModal('ai-modal');
+  if (aiHistory.length === 0) {
+    addAIMessage('assistant', '👋 أهلاً! أنا مساعدك الذكي في Nobo ERP. يمكنني تحليل بياناتك المالية، المخزون، والعملاء. اسألني أي شيء!');
+  }
+}
+
+function addAIMessage(role, text) {
+  const div = document.getElementById('ai-messages');
+  const msg = document.createElement('div');
+  msg.style.cssText = role === 'user' 
+    ? 'background:rgba(200,150,60,0.15);border:1px solid rgba(200,150,60,0.2);border-radius:12px 12px 4px 12px;padding:10px 14px;font-size:13px;align-self:flex-end;max-width:85%;text-align:right'
+    : 'background:var(--bg3);border:1px solid var(--border);border-radius:12px 12px 12px 4px;padding:10px 14px;font-size:13px;align-self:flex-start;max-width:90%;line-height:1.7';
+  msg.textContent = text;
+  div.appendChild(msg);
+  div.scrollTop = div.scrollHeight;
+}
+
+function quickAI(text) {
+  document.getElementById('ai-input').value = text;
+  sendAIMessage();
+}
+
+async function sendAIMessage() {
+  const input = document.getElementById('ai-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  
+  addAIMessage('user', text);
+  
+  // Get business data for context
+  const [invoices, expenses, products, customers] = await Promise.all([
+    dbGetAll('invoices'), dbGetAll('expenses'), dbGetAll('products'), dbGetAll('customers')
+  ]);
+  const activeSector = localStorage.getItem('ff_sector_name') || 'عام';
+  const revenue = invoices.filter(i => i.sector === localStorage.getItem('ff_sector')).reduce((s,i) => s+Number(i.total||0), 0);
+  const totalExp = expenses.reduce((s,e) => s+Number(e.amount||0), 0);
+  const profit = revenue - totalExp;
+  
+  const systemPrompt = `أنت مساعد ذكي متخصص في تحليل بيانات الأعمال لنظام Nobo ERP.
+بيانات العمل الحالية:
+- القطاع: ${activeSector}
+- الإيرادات: ${revenue.toLocaleString()} ر.س
+- المصروفات: ${totalExp.toLocaleString()} ر.س  
+- صافي الربح: ${profit.toLocaleString()} ر.س
+- عدد الفواتير: ${invoices.length}
+- عدد العملاء: ${customers.length}
+- عدد المنتجات: ${products.length}
+أجب بالعربية بشكل مختصر ومفيد. قدم نصائح عملية وأرقام واضحة.`;
+
+  aiHistory.push({ role: 'user', content: text });
+  
+  // Loading
+  const loadDiv = document.createElement('div');
+  loadDiv.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--text3)';
+  loadDiv.textContent = '⏳ جاري التحليل...';
+  loadDiv.id = 'ai-loading';
+  document.getElementById('ai-messages').appendChild(loadDiv);
+  
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: aiHistory
+      })
+    });
+    const data = await res.json();
+    document.getElementById('ai-loading')?.remove();
+    
+    const reply = data.content?.[0]?.text || 'عذراً، حدث خطأ. حاول مرة أخرى.';
+    aiHistory.push({ role: 'assistant', content: reply });
+    addAIMessage('assistant', reply);
+  } catch(e) {
+    document.getElementById('ai-loading')?.remove();
+    addAIMessage('assistant', '❌ تعذر الاتصال. تأكد من الإنترنت وحاول مرة أخرى.');
+  }
 }
 
 // ════════════════════════════════════════
@@ -2380,6 +2469,27 @@ async function deleteProduct(id) {
     </div>
     <button class="btn-primary" onclick="updateInvoice()" style="margin-bottom:8px">💾 حفظ التعديلات</button>
     <button class="btn-secondary" onclick="closeModal('edit-invoice-modal')">إلغاء</button>
+  </div>
+</div>
+
+<!-- AI COPILOT MODAL -->
+<div class="modal" id="ai-modal">
+  <div class="modal-content" style="max-height:90vh">
+    <div class="modal-header">
+      <div class="modal-title">🤖 Nobo AI Copilot</div>
+      <div class="modal-close" onclick="closeModal('ai-modal')">✕</div>
+    </div>
+    <div id="ai-messages" style="min-height:200px;max-height:50vh;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="display:flex;gap:8px">
+      <input class="form-input" id="ai-input" type="text" placeholder="اسألني عن أعمالك..." style="flex:1" onkeydown="if(event.key==='Enter')sendAIMessage()">
+      <button onclick="sendAIMessage()" style="background:linear-gradient(135deg,#c8963c,#e8b84b);border:none;border-radius:10px;padding:12px 16px;color:#080c14;font-family:Cairo,sans-serif;font-weight:700;cursor:pointer;font-size:16px">→</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button onclick="quickAI('حلل إيراداتي')" class="btn-secondary" style="font-size:11px;padding:6px 12px">📊 حلل إيراداتي</button>
+      <button onclick="quickAI('كم صافي ربحي؟')" class="btn-secondary" style="font-size:11px;padding:6px 12px">💰 صافي الربح</button>
+      <button onclick="quickAI('نصائح لتحسين المبيعات')" class="btn-secondary" style="font-size:11px;padding:6px 12px">💡 نصائح</button>
+      <button onclick="quickAI('ما وضع المخزون؟')" class="btn-secondary" style="font-size:11px;padding:6px 12px">📦 المخزون</button>
+    </div>
   </div>
 </div>
 
