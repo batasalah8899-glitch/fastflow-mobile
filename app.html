@@ -456,6 +456,8 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
     <div class="more-item" onclick="showPage('settings');toggleMore()"><span class="more-icon">⚙️</span><span id="more-lbl-settings">الإعدادات</span></div>
     <div class="more-item" onclick="openAICopilot();toggleMore()"><span class="more-icon">🤖</span><span style="color:#c8963c">AI Copilot</span></div>
     <div class="more-item" onclick="renderPermissions();toggleMore()"><span class="more-icon">🔒</span><span>صلاحياتي</span></div>
+    <div class="more-item" onclick="showPage('archive');toggleMore()"><span class="more-icon">🗄️</span><span>الأرشيف</span></div>
+    <div class="more-item" onclick="showPage('transfer');toggleMore()"><span class="more-icon">📥</span><span>نقل البيانات</span></div>
     <div class="more-item" onclick="doLogout()"><span class="more-icon">🚪</span><span id="more-lbl-logout" style="color:var(--red)">خروج</span></div>
   </div>
 </div>
@@ -731,6 +733,302 @@ function applyTheme(theme) {
 // LANGUAGE
 // ════════════════════════════════════════
 // ════════════════════════════════════════
+// ARCHIVE
+// ════════════════════════════════════════
+async function renderArchive() {
+  if (!canAuditLog()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية الوصول للأرشيف</div></div>';
+    return;
+  }
+  const [invoices, products, customers] = await Promise.all([dbGetAll('invoices'), dbGetAll('products'), dbGetAll('customers')]);
+  
+  // Archived = deleted/cancelled items
+  const archivedInvoices = invoices.filter(i => i.status === 'CANCELLED' || i._deleted);
+  const archivedProducts = products.filter(p => !p.isActive || p._deleted);
+  
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">🗄️ الأرشيف</div>
+      <div class="page-sub">السجلات المؤرشفة والمحذوفة</div>
+    </div>
+    <div class="stat-grid" style="margin-bottom:14px">
+      <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" style="color:var(--primary)">${archivedInvoices.length}</div><div class="stat-label">فواتير مؤرشفة</div></div>
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" style="color:var(--blue)">${archivedProducts.length}</div><div class="stat-label">منتجات محذوفة</div></div>
+    </div>
+    <div class="section-title">🧾 الفواتير الملغية</div>
+    <div class="list-card" style="margin-bottom:14px">
+      ${archivedInvoices.length === 0 ? '<div class="empty-state"><div>لا توجد فواتير مؤرشفة</div></div>'
+        : archivedInvoices.map(inv => `<div class="list-item">
+          <div class="list-avatar" style="background:rgba(239,68,68,0.1)">🗄️</div>
+          <div class="list-info">
+            <div class="list-name">${inv.clientName||'-'}</div>
+            <div class="list-sub">${inv.invoiceNumber||'draft'} • ${inv.issueDate?new Date(inv.issueDate).toLocaleDateString():''}</div>
+          </div>
+          <div style="text-align:left">
+            <div class="list-amount">${Number(inv.total||0).toLocaleString()}</div>
+            ${canDelete() ? `<button onclick="restoreInvoice('${inv.id}')" style="font-size:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;padding:2px 8px;color:var(--green);cursor:pointer;font-family:Cairo,sans-serif">استعادة</button>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="section-title">📦 المنتجات المحذوفة</div>
+    <div class="list-card">
+      ${archivedProducts.length === 0 ? '<div class="empty-state"><div>لا توجد منتجات محذوفة</div></div>'
+        : archivedProducts.map(p => `<div class="list-item">
+          <div class="list-avatar" style="background:rgba(239,68,68,0.1)">📦</div>
+          <div class="list-info"><div class="list-name">${p.name}</div></div>
+          ${canDelete() ? `<button onclick="restoreProduct('${p.id}')" style="font-size:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:6px;padding:2px 8px;color:var(--green);cursor:pointer;font-family:Cairo,sans-serif">استعادة</button>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
+
+async function restoreInvoice(id) {
+  const invoices = await dbGetAll('invoices');
+  const inv = invoices.find(i => i.id === id);
+  if (inv) {
+    await dbPut('invoices', {...inv, status: 'DRAFT', _deleted: false});
+    alert('✅ تم استعادة الفاتورة!');
+    renderArchive();
+  }
+}
+
+async function restoreProduct(id) {
+  const products = await dbGetAll('products');
+  const p = products.find(x => x.id === id);
+  if (p) {
+    await dbPut('products', {...p, isActive: true, _deleted: false});
+    alert('✅ تم استعادة المنتج!');
+    renderArchive();
+  }
+}
+
+// ════════════════════════════════════════
+// DATA TRANSFER - Import / Export
+// ════════════════════════════════════════
+function renderTransfer() {
+  if (!canImportData() && !canExport()) {
+    document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div>ليس لديك صلاحية نقل البيانات</div></div>';
+    return;
+  }
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">📥 نقل البيانات</div>
+      <div class="page-sub">استيراد وتصدير البيانات</div>
+    </div>
+    
+    ${canExport() ? `
+    <div class="section-title">📤 تصدير البيانات</div>
+    <div class="list-card" style="margin-bottom:16px">
+      <div class="list-item" onclick="exportData('invoices')" style="cursor:pointer">
+        <div class="list-avatar" style="background:rgba(34,197,94,0.1)">🧾</div>
+        <div class="list-info"><div class="list-name">تصدير الفواتير</div><div class="list-sub">CSV جاهز للـ Excel</div></div>
+        <span style="color:var(--green)">📥</span>
+      </div>
+      <div class="list-item" onclick="exportData('customers')" style="cursor:pointer">
+        <div class="list-avatar" style="background:rgba(59,130,246,0.1)">👥</div>
+        <div class="list-info"><div class="list-name">تصدير العملاء</div><div class="list-sub">CSV جاهز للـ Excel</div></div>
+        <span style="color:var(--green)">📥</span>
+      </div>
+      <div class="list-item" onclick="exportData('products')" style="cursor:pointer">
+        <div class="list-avatar" style="background:rgba(139,92,246,0.1)">📦</div>
+        <div class="list-info"><div class="list-name">تصدير المنتجات</div><div class="list-sub">CSV جاهز للـ Excel</div></div>
+        <span style="color:var(--green)">📥</span>
+      </div>
+      <div class="list-item" onclick="exportData('expenses')" style="cursor:pointer">
+        <div class="list-avatar" style="background:rgba(239,68,68,0.1)">💸</div>
+        <div class="list-info"><div class="list-name">تصدير المصروفات</div><div class="list-sub">CSV جاهز للـ Excel</div></div>
+        <span style="color:var(--green)">📥</span>
+      </div>
+      <div class="list-item" onclick="exportAllData()" style="cursor:pointer">
+        <div class="list-avatar" style="background:rgba(200,150,60,0.1)">📦</div>
+        <div class="list-info"><div class="list-name">تصدير كل البيانات</div><div class="list-sub">JSON كامل للنسخ الاحتياطي</div></div>
+        <span style="color:var(--primary)">⬇️</span>
+      </div>
+    </div>` : ''}
+    
+    ${canImportData() ? `
+    <div class="section-title">📤 استيراد البيانات</div>
+    <div class="list-card">
+      <div style="padding:16px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">ادعم: CSV, JSON, Excel (.xlsx)</div>
+        <div style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer" onclick="document.getElementById('import-file').click()">
+          <div style="font-size:32px;margin-bottom:8px">📂</div>
+          <div style="font-size:13px;font-weight:700">اضغط لاختيار ملف</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">CSV أو JSON أو Excel</div>
+        </div>
+        <input type="file" id="import-file" accept=".csv,.json,.xlsx" style="display:none" onchange="handleImport(this)">
+        <div id="import-preview" style="margin-top:12px"></div>
+      </div>
+    </div>` : ''}`;
+}
+
+async function exportData(type) {
+  const data = await dbGetAll(type);
+  if (!data.length) { alert('لا توجد بيانات للتصدير'); return; }
+  
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
+  let filtered = data;
+  if (type === 'invoices') filtered = data.filter(i => i.sector === activeSector);
+  if (type === 'products') filtered = data.filter(p => p.sector === activeSector);
+  
+  // CSV headers
+  const headers = {
+    invoices: ['رقم الفاتورة','العميل','الرقم الضريبي','المجموع','الضريبة','الإجمالي','الحالة','التاريخ'],
+    customers: ['الاسم','الهاتف','البريد','الرقم الضريبي'],
+    products:  ['الاسم','الكمية','سعر البيع','سعر التكلفة','الباركود','الفئة'],
+    expenses:  ['العنوان','المبلغ','الفئة','التاريخ']
+  };
+  
+  const rows = {
+    invoices: filtered.map(i => [i.invoiceNumber,i.clientName,i.clientVat||'',i.subtotal,i.vatAmount,i.total,i.status,i.issueDate?new Date(i.issueDate).toLocaleDateString():'']),
+    customers: filtered.map(c => [c.name,c.phone||'',c.email||'',c.vatNumber||'']),
+    products:  filtered.map(p => [p.name,p.quantity,p.sellingPrice,p.costPrice||0,p.barcode||'',p.category||'']),
+    expenses:  filtered.map(e => [e.title,e.amount,e.category,e.date?new Date(e.date).toLocaleDateString():''])
+  };
+  
+  const csv = [headers[type], ...rows[type]].map(r => r.map(v => '"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nobo-' + type + '-' + new Date().toLocaleDateString('en').replace(/\//g,'-') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  alert('✅ تم تصدير ' + filtered.length + ' سجل!');
+}
+
+async function exportAllData() {
+  const [invoices, customers, products, expenses, accounts] = await Promise.all([
+    dbGetAll('invoices'), dbGetAll('customers'), dbGetAll('products'), dbGetAll('expenses'), dbGetAll('accounts')
+  ]);
+  const backup = {
+    version: '1.0',
+    date: new Date().toISOString(),
+    company: USER?.company?.nameAr || 'Nobo ERP',
+    data: { invoices, customers, products, expenses, accounts }
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nobo-backup-' + new Date().toLocaleDateString('en').replace(/\//g,'-') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  alert('✅ تم تصدير كل البيانات!');
+}
+
+async function handleImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const preview = document.getElementById('import-preview');
+  preview.innerHTML = '<div style="color:var(--text3);font-size:12px">⏳ جاري قراءة الملف...</div>';
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const text = e.target.result;
+      
+      // JSON backup restore
+      if (file.name.endsWith('.json')) {
+        const backup = JSON.parse(text);
+        if (backup.data) {
+          const { invoices, customers, products, expenses } = backup.data;
+          let count = 0;
+          if (invoices?.length) { await dbPutAll('invoices', invoices); count += invoices.length; }
+          if (customers?.length) { await dbPutAll('customers', customers); count += customers.length; }
+          if (products?.length)  { await dbPutAll('products', products); count += products.length; }
+          if (expenses?.length)  { await dbPutAll('expenses', expenses); count += expenses.length; }
+          preview.innerHTML = '<div style="color:var(--green);font-size:13px;font-weight:700">✅ تم استيراد ' + count + ' سجل بنجاح!</div>';
+          alert('✅ تم استيراد البيانات! ' + count + ' سجل');
+          return;
+        }
+      }
+      
+      // CSV import
+      if (file.name.endsWith('.csv')) {
+        const lines = text.split('\n').filter(l => l.trim());
+        const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+        const rows = lines.slice(1).map(l => {
+          const vals = l.split(',').map(v => v.replace(/"/g,'').trim());
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = vals[i] || '');
+          return obj;
+        });
+        
+        preview.innerHTML = '<div style="color:var(--blue);font-size:12px">📋 ' + rows.length + ' سطر جاهز للاستيراد</div>' +
+          '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:var(--text3)">الأعمدة: ' + headers.join(' • ') + '</div>' +
+          '<button onclick="confirmCSVImport(' + JSON.stringify(rows).replace(/'/g,"\'") + ')" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;border-radius:8px;padding:10px 20px;color:#080c14;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;width:100%">✅ تأكيد الاستيراد</button>';
+        return;
+      }
+      
+      preview.innerHTML = '<div style="color:var(--red);font-size:12px">❌ صيغة الملف غير مدعومة. استخدم CSV أو JSON</div>';
+    } catch(err) {
+      preview.innerHTML = '<div style="color:var(--red);font-size:12px">❌ خطأ في قراءة الملف: ' + err.message + '</div>';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function confirmCSVImport(rows) {
+  if (!rows.length) return;
+  const activeSector = localStorage.getItem('ff_sector') || 'general';
+  
+  // Try to detect type from headers
+  const keys = Object.keys(rows[0]);
+  let imported = 0;
+  
+  if (keys.some(k => k.includes('فاتورة') || k.includes('عميل') || k.includes('Invoice'))) {
+    // Invoices
+    for (const row of rows) {
+      await dbPut('invoices', {
+        id: 'import_' + Date.now() + '_' + imported,
+        sector: activeSector,
+        clientName: row['العميل'] || row['Client'] || row['الاسم'] || 'مستورد',
+        clientVat: row['الرقم الضريبي'] || '',
+        total: parseFloat(row['الإجمالي'] || row['Total'] || 0),
+        subtotal: parseFloat(row['المجموع'] || 0),
+        vatAmount: parseFloat(row['الضريبة'] || 0),
+        status: 'ISSUED',
+        invoiceNumber: 'IMP-' + (++imported),
+        issueDate: new Date().toISOString(),
+        items: [], _pending: true
+      });
+    }
+  } else if (keys.some(k => k.includes('هاتف') || k.includes('Phone') || k.includes('بريد'))) {
+    // Customers
+    for (const row of rows) {
+      await dbPut('customers', {
+        id: 'import_' + Date.now() + '_' + imported,
+        name: row['الاسم'] || row['Name'] || 'عميل مستورد',
+        phone: row['الهاتف'] || row['Phone'] || '',
+        email: row['البريد'] || row['Email'] || '',
+        vatNumber: row['الرقم الضريبي'] || '',
+        _pending: true
+      });
+      imported++;
+    }
+  } else if (keys.some(k => k.includes('كمية') || k.includes('Qty') || k.includes('سعر'))) {
+    // Products
+    for (const row of rows) {
+      await dbPut('products', {
+        id: 'import_' + Date.now() + '_' + imported,
+        sector: activeSector,
+        name: row['الاسم'] || row['Name'] || 'منتج مستورد',
+        quantity: parseFloat(row['الكمية'] || row['Qty'] || 0),
+        sellingPrice: parseFloat(row['سعر البيع'] || row['Price'] || 0),
+        costPrice: parseFloat(row['سعر التكلفة'] || row['Cost'] || 0),
+        barcode: row['الباركود'] || '',
+        category: row['الفئة'] || '',
+        isActive: true, _pending: true
+      });
+      imported++;
+    }
+  }
+  
+  alert('✅ تم استيراد ' + imported + ' سجل!');
+  document.getElementById('import-preview').innerHTML = '<div style="color:var(--green);font-size:13px;font-weight:700">✅ تم الاستيراد بنجاح! ' + imported + ' سجل</div>';
+}
+
+// ════════════════════════════════════════
 // LANDING PAGE
 // ════════════════════════════════════════
 function showLanding() {
@@ -882,6 +1180,7 @@ function updateClock() {
 let aiHistory = [];
 
 function openAICopilot() {
+  if (!canUseAI()) { alert('❌ ليس لديك صلاحية استخدام AI Copilot'); return; }
   openModal('ai-modal');
   if (aiHistory.length === 0) {
     addAIMessage('assistant', '👋 أهلاً! أنا مساعدك الذكي في Nobo ERP. يمكنني تحليل بياناتك المالية، المخزون، والعملاء. اسألني أي شيء!');
@@ -996,15 +1295,92 @@ function canAuditLog()       { return hasRole('MANAGER'); }       // سجل ال
 
 // ═══ Invoice Limit (Saudi compliance) ═══
 const INVOICE_LIMITS = {
-  SUPER_ADMIN: Infinity,
-  ADMIN: Infinity,
-  MANAGER: 500000,    // 500K ر.س
-  ACCOUNTANT: 100000, // 100K ر.س
-  CASHIER: 10000,     // 10K ر.س
-  VIEWER: 0
+  SUPER_ADMIN: Infinity, ADMIN: Infinity,
+  MANAGER: 500000, ACCOUNTANT: 100000, CASHIER: 10000, VIEWER: 0
 };
-function getInvoiceLimit() { return INVOICE_LIMITS[userRole()] || 0; }
+const DISCOUNT_LIMITS = {
+  SUPER_ADMIN: 100, ADMIN: 100, MANAGER: 30, ACCOUNTANT: 10, CASHIER: 5, VIEWER: 0
+};
+
+function getInvoiceLimit()  { return INVOICE_LIMITS[userRole()] || 0; }
+function getDiscountLimit() { return DISCOUNT_LIMITS[userRole()] || 0; }
 function canInvoiceAmount(amount) { return Number(amount) <= getInvoiceLimit(); }
+function canDiscountPercent(pct)  { return Number(pct) <= getDiscountLimit(); }
+
+// ═══ Extended Permissions ═══
+
+// 1. صلاحيات الفواتير والعمليات
+function canApproveInvoice()    { return hasRole('MANAGER'); }      // اعتماد فاتورة
+function canVoidPayment()       { return hasRole('MANAGER'); }      // إلغاء دفعة
+function canManagePayments()    { return hasRole('ACCOUNTANT'); }   // إدارة المدفوعات
+function canSendWhatsApp()      { return hasRole('CASHIER'); }      // إرسال واتساب
+function canManageCustomers()   { return hasRole('CASHIER'); }      // إدارة العملاء
+
+// 2. صلاحيات المخزون
+function canAddStock()          { return hasRole('ACCOUNTANT'); }   // إضافة مخزون
+function canTransferStock()     { return hasRole('MANAGER'); }      // نقل مخزون
+function canAdjustPrice()       { return hasRole('MANAGER'); }      // تعديل سعر
+function canViewCostPrice()     { return hasRole('ACCOUNTANT'); }   // رؤية سعر التكلفة
+function canInventoryCount()    { return hasRole('ACCOUNTANT'); }   // جرد المخزون
+function canWriteOff()          { return hasRole('MANAGER'); }      // إتلاف/شطب
+
+// 3. صلاحيات المحاسبة الأساسية
+function canCreateJournal()     { return hasRole('ACCOUNTANT'); }   // إنشاء قيود يومية
+function canPostJournal()       { return hasRole('ACCOUNTANT'); }   // ترحيل قيود (نهائي)
+function canReverseJournal()    { return hasRole('ADMIN'); }        // عكس قيد مرحّل
+function canManageAccounts()    { return hasRole('ACCOUNTANT'); }   // إدارة شجرة الحسابات
+function canManageCostCenters() { return hasRole('MANAGER'); }      // مراكز التكلفة
+function canManageVendors()     { return hasRole('ACCOUNTANT'); }   // إدارة الموردين
+function canManagePurchases()   { return hasRole('ACCOUNTANT'); }   // إدارة المشتريات
+
+// 4. صلاحيات الرقابة والاعتماد (مبدأ الفصل بين المهام)
+// ⚠️ لا يجوز أن يملك نفس المستخدم: إنشاء + اعتماد في نفس الوقت
+function canPostAndApprove()    { return hasRole('MANAGER') && !canCreateJournal(); }
+function canFinalApprove()      { return hasRole('ADMIN'); }        // الاعتماد النهائي
+function canEditPosted()        { return hasRole('ADMIN'); }        // تعديل مرحّل
+function canDeletePosted()      { return hasRole('SUPER_ADMIN'); }  // حذف مرحّل
+
+// 5. صلاحيات التقارير المتقدمة
+function canViewFinancials()    { return hasRole('ACCOUNTANT'); }   // القوائم المالية
+function canViewAgingReport()   { return hasRole('ACCOUNTANT'); }   // تقرير أعمار الديون
+function canViewVATReport()     { return hasRole('ACCOUNTANT'); }   // تقرير ضريبة القيمة المضافة
+function canViewCashFlow()      { return hasRole('ACCOUNTANT'); }   // التدفقات النقدية
+function canViewBalanceSheet()  { return hasRole('ACCOUNTANT'); }   // الميزانية العمومية
+function canExport()            { return hasRole('MANAGER'); }      // تصدير التقارير
+function canPrintReports()      { return hasRole('ACCOUNTANT'); }   // طباعة التقارير
+
+// 6. صلاحيات الإقفال والفترات المالية
+function canClosePeriod()       { return hasRole('ADMIN'); }        // إقفال شهري/سنوي
+function canReopenPeriod()      { return hasRole('SUPER_ADMIN'); }  // إعادة فتح فترة مقفلة
+function canYearEnd()           { return hasRole('ADMIN'); }        // إقفال سنة مالية
+
+// 7. صلاحيات الأصول الثابتة
+function canManageAssets()      { return hasRole('ACCOUNTANT'); }   // إدارة الأصول
+function canDepreciate()        { return hasRole('ACCOUNTANT'); }   // حساب الإهلاك
+function canDisposeAsset()      { return hasRole('MANAGER'); }      // استبعاد أصل
+
+// 8. صلاحيات الموارد البشرية
+function canViewSalaries()      { return hasRole('ADMIN'); }        // رؤية الرواتب
+function canManageEmployees()   { return hasRole('MANAGER'); }      // إدارة الموظفين
+function canRunPayroll()        { return hasRole('ADMIN'); }        // تشغيل الرواتب
+function canApproveLeave()      { return hasRole('MANAGER'); }      // اعتماد الإجازات
+
+// 9. صلاحيات النظام
+function canManageUsers()       { return hasRole('ADMIN'); }        // إدارة المستخدمين
+function canManageBranches()    { return hasRole('ADMIN'); }        // إدارة الفروع
+function canSettings()          { return hasRole('ADMIN'); }        // الإعدادات
+function canImportData()        { return hasRole('ADMIN'); }        // استيراد بيانات
+function canBackup()            { return hasRole('ADMIN'); }        // نسخ احتياطي
+function canAuditLog()          { return hasRole('MANAGER'); }      // سجل التدقيق
+function canViewAuditLog()      { return hasRole('MANAGER'); }      // عرض سجل التدقيق
+function canUseAI()             { return hasRole('ACCOUNTANT'); }   // AI Copilot
+function canViewDashboard()     { return hasRole('VIEWER'); }       // لوحة التحكم
+
+// ⚠️ مبدأ الفصل بين المهام - Saudi Compliance
+// الكاشير: يُنشئ ولا يعتمد
+// المحاسب: يُرحّل ولا يحذف المرحّل  
+// المشرف: يعتمد ولا يُنشئ
+// المدير: يراقب الكل
 
 function rbacHide(el) { if(el) el.style.display='none'; }
 function rbacShow(el) { if(el) el.style.display=''; }
@@ -1032,20 +1408,77 @@ function applyRBAC() {
 function renderPermissions() {
   const role = userRole();
   const perms = [
-    { icon:'🧾', name:'إنشاء فاتورة', key:'canCreate', fn: canCreate },
-    { icon:'✏️', name:'تعديل فاتورة', key:'canEdit', fn: canEdit },
-    { icon:'🗑️', name:'حذف فاتورة', key:'canDelete', fn: canDelete },
-    { icon:'❌', name:'إلغاء فاتورة', key:'canCancelInvoice', fn: canCancelInvoice },
-    { icon:'💰', name:'منح خصم', key:'canDiscount', fn: canDiscount },
-    { icon:'🖨️', name:'طباعة فاتورة', key:'canPrint', fn: canPrint },
-    { icon:'↩️', name:'مرتجع', key:'canReturn', fn: canReturn },
-    { icon:'📊', name:'التقارير المالية', key:'canViewFinancials', fn: canViewFinancials },
-    { icon:'📤', name:'تصدير البيانات', key:'canExport', fn: canExport },
-    { icon:'🏛️', name:'إرسال ZATCA', key:'canZATCA', fn: canZATCA },
-    { icon:'📋', name:'سجل التدقيق', key:'canAuditLog', fn: canAuditLog },
-    { icon:'👥', name:'إدارة المستخدمين', key:'canManageUsers', fn: canManageUsers },
-    { icon:'🏢', name:'إدارة الفروع', key:'canManageBranches', fn: canManageBranches },
-    { icon:'⚙️', name:'الإعدادات', key:'canSettings', fn: canSettings },
+    // 1. الفواتير والمقبوضات
+    { icon:'🧾', name:'إنشاء فاتورة', cat:'الفواتير والمقبوضات', fn: canCreate },
+    { icon:'✏️', name:'تعديل فاتورة', cat:'الفواتير', fn: canEdit },
+    { icon:'✅', name:'اعتماد فاتورة', cat:'الفواتير', fn: canApproveInvoice },
+    { icon:'❌', name:'إلغاء فاتورة', cat:'الفواتير', fn: canCancelInvoice },
+    { icon:'🗑️', name:'حذف فاتورة', cat:'الفواتير', fn: canDelete },
+    { icon:'🖨️', name:'طباعة فاتورة', cat:'الفواتير', fn: canPrint },
+    { icon:'💬', name:'إرسال واتساب', cat:'الفواتير', fn: canSendWhatsApp },
+    { icon:'🏛️', name:'إرسال ZATCA', cat:'الفواتير', fn: canZATCA },
+    // المدفوعات
+    { icon:'💰', name:'منح خصم', cat:'المدفوعات', fn: canDiscount },
+    { icon:'💳', name:'إدارة المدفوعات', cat:'المدفوعات', fn: canManagePayments },
+    { icon:'🚫', name:'إلغاء دفعة', cat:'المدفوعات', fn: canVoidPayment },
+    // المخزون
+    { icon:'📦', name:'إضافة مخزون', cat:'المخزون', fn: canAddStock },
+    { icon:'↩️', name:'مرتجع مخزون', cat:'المخزون', fn: canReturn },
+    { icon:'🔄', name:'نقل مخزون', cat:'المخزون', fn: canTransferStock },
+    { icon:'🏷️', name:'تعديل سعر', cat:'المخزون', fn: canAdjustPrice },
+    { icon:'💵', name:'رؤية سعر التكلفة', cat:'المخزون', fn: canViewCostPrice },
+    // المحاسبة
+    { icon:'📊', name:'التقارير المالية', cat:'المحاسبة', fn: canViewFinancials },
+    { icon:'📒', name:'إدارة الحسابات', cat:'المحاسبة', fn: canManageAccounts },
+    { icon:'📝', name:'ترحيل قيود', cat:'المحاسبة', fn: canPostJournal },
+    { icon:'🔒', name:'إغلاق الفترة', cat:'المحاسبة', fn: canClosePeriod },
+    // العملاء والموظفين
+    { icon:'👥', name:'إدارة العملاء', cat:'الموارد', fn: canManageCustomers },
+    { icon:'👤', name:'إدارة الموظفين', cat:'الموارد', fn: canManageEmployees },
+    { icon:'💼', name:'رؤية الرواتب', cat:'الموارد', fn: canViewSalaries },
+    // النظام
+    { icon:'📤', name:'تصدير البيانات', cat:'النظام', fn: canExport },
+    { icon:'📥', name:'استيراد بيانات', cat:'النظام', fn: canImportData },
+    { icon:'💾', name:'نسخ احتياطي', cat:'النظام', fn: canBackup },
+    { icon:'📋', name:'سجل التدقيق', cat:'النظام', fn: canViewAuditLog },
+    { icon:'👥', name:'إدارة المستخدمين', cat:'النظام', fn: canManageUsers },
+    { icon:'🏢', name:'إدارة الفروع', cat:'النظام', fn: canManageBranches },
+    { icon:'⚙️', name:'الإعدادات', cat:'النظام', fn: canSettings },
+    { icon:'🤖', name:'استخدام AI Copilot', cat:'النظام', fn: canUseAI },
+    // المحاسبة المتقدمة
+    { icon:'📒', name:'إنشاء قيود يومية', cat:'المحاسبة المتقدمة', fn: canCreateJournal },
+    { icon:'✅', name:'ترحيل القيود (نهائي)', cat:'المحاسبة المتقدمة', fn: canPostJournal },
+    { icon:'↩️', name:'عكس قيد مرحّل', cat:'المحاسبة المتقدمة', fn: canReverseJournal },
+    { icon:'🌳', name:'إدارة شجرة الحسابات', cat:'المحاسبة المتقدمة', fn: canManageAccounts },
+    { icon:'🏢', name:'مراكز التكلفة', cat:'المحاسبة المتقدمة', fn: canManageCostCenters },
+    { icon:'✏️', name:'تعديل قيد مرحّل', cat:'المحاسبة المتقدمة', fn: canEditPosted },
+    // المشتريات والموردين
+    { icon:'🛒', name:'إدارة المشتريات', cat:'المشتريات', fn: canManagePurchases },
+    { icon:'🤝', name:'إدارة الموردين', cat:'المشتريات', fn: canManageVendors },
+    // التقارير المتقدمة
+    { icon:'📊', name:'القوائم المالية', cat:'التقارير', fn: canViewFinancials },
+    { icon:'⏳', name:'تقرير أعمار الديون', cat:'التقارير', fn: canViewAgingReport },
+    { icon:'🏛️', name:'تقرير ضريبة VAT', cat:'التقارير', fn: canViewVATReport },
+    { icon:'💵', name:'التدفقات النقدية', cat:'التقارير', fn: canViewCashFlow },
+    { icon:'⚖️', name:'الميزانية العمومية', cat:'التقارير', fn: canViewBalanceSheet },
+    { icon:'🖨️', name:'طباعة التقارير', cat:'التقارير', fn: canPrintReports },
+    // الإقفال المالي
+    { icon:'🔒', name:'إقفال شهري/سنوي', cat:'الإقفال المالي', fn: canClosePeriod },
+    { icon:'🔓', name:'إعادة فتح فترة', cat:'الإقفال المالي', fn: canReopenPeriod },
+    { icon:'📅', name:'إقفال السنة المالية', cat:'الإقفال المالي', fn: canYearEnd },
+    // الأصول الثابتة
+    { icon:'🏗️', name:'إدارة الأصول الثابتة', cat:'الأصول الثابتة', fn: canManageAssets },
+    { icon:'📉', name:'حساب الإهلاك', cat:'الأصول الثابتة', fn: canDepreciate },
+    { icon:'🗑️', name:'استبعاد أصل', cat:'الأصول الثابتة', fn: canDisposeAsset },
+    // الموارد البشرية
+    { icon:'💼', name:'رؤية الرواتب', cat:'الموارد البشرية', fn: canViewSalaries },
+    { icon:'👤', name:'إدارة الموظفين', cat:'الموارد البشرية', fn: canManageEmployees },
+    { icon:'💰', name:'تشغيل الرواتب', cat:'الموارد البشرية', fn: canRunPayroll },
+    { icon:'🌴', name:'اعتماد الإجازات', cat:'الموارد البشرية', fn: canApproveLeave },
+    // المخزون المتقدم
+    { icon:'📋', name:'جرد المخزون', cat:'المخزون المتقدم', fn: canInventoryCount },
+    { icon:'🗑️', name:'إتلاف/شطب مخزون', cat:'المخزون المتقدم', fn: canWriteOff },
+    { icon:'🔄', name:'نقل مخزون', cat:'المخزون المتقدم', fn: canTransferStock },
   ];
 
   const limitRow = '<div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.2);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:700">💳 حد الفاتورة الأقصى</span><span style="font-size:16px;font-weight:900;color:#c8963c">' + (getInvoiceLimit() === Infinity ? 'بلا حد' : Number(getInvoiceLimit()).toLocaleString() + ' ر.س') + '</span></div>';
@@ -1053,17 +1486,16 @@ function renderPermissions() {
   document.getElementById('main-content').innerHTML = `
     <div class="page-header">
       <div class="page-title">🔒 صلاحياتي</div>
-      <div class="page-sub">الدور الحالي: <span style="color:${ROLE_COLORS[role]||'#94a3b8'};font-weight:700">${ROLE_AR[role]||role}</span></div>
+      <div class="page-sub">الدور: <span style="color:${ROLE_COLORS[role]||'#94a3b8'};font-weight:700">${ROLE_AR[role]||role}</span> · ${perms.filter(p=>p.fn()).length}/${perms.length} صلاحية</div>
     </div>
     ${limitRow}
-    <div class="list-card">
-      ${perms.map(p => `
-        <div class="list-item">
-          <div class="list-avatar" style="background:${p.fn()?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)'}">${p.icon}</div>
-          <div class="list-info"><div class="list-name">${p.name}</div></div>
-          <span class="badge ${p.fn()?'b-green':'b-red'}">${p.fn()?'✅ مسموح':'❌ غير مسموح'}</span>
-        </div>`).join('')}
-    </div>`;
+    <div style="background:rgba(200,150,60,0.08);border:1px solid rgba(200,150,60,0.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--text3)">
+      💰 حد الخصم الأقصى: <strong style="color:var(--primary)">${getDiscountLimit()}%</strong>
+    </div>
+    ${[...new Set(perms.map(p=>p.cat))].map(cat => {
+      const cp = perms.filter(p=>p.cat===cat);
+      return '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;display:flex;justify-content:space-between"><span>'+cat+'</span><span style="font-size:10px;color:var(--text3)">'+cp.filter(p=>p.fn()).length+'/'+cp.length+' مسموح</span></div><div class="list-card">'+cp.map(p=>'<div class="list-item"><div class="list-avatar" style="background:'+(p.fn()?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)')+'">'+p.icon+'</div><div class="list-info"><div class="list-name">'+p.name+'</div></div><span class="badge '+(p.fn()?'b-green':'b-red')+'">'+(p.fn()?'✅':'❌')+'</span></div>').join('')+'</div></div>';
+    }).join('')}`;
 }
 
 // ════════════════════════════════════════
@@ -1313,6 +1745,8 @@ function showPage(page) {
   else if (page === 'accounts') renderAccounts();
   else if (page === 'employees') renderEmployees();
   else if (page === 'settings') renderSettings();
+  else if (page === 'archive') renderArchive();
+  else if (page === 'transfer') renderTransfer();
 }
 
 function toggleMore() {
