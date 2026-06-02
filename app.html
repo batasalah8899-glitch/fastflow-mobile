@@ -620,7 +620,7 @@ body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--text); 
 // ════════════════════════════════════════
 const API = 'https://fastflow-backend-production.up.railway.app/api/v1';
 const DB_NAME = 'FastFlowDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let TOKEN = null;
 let USER = null;
@@ -1057,7 +1057,7 @@ async function renderPayroll() {
     const basic = Number(e.basicSalary||0);
     const housing = Number(e.housingAllowance||0);
     const trans = Number(e.transportAllowance||0);
-    const gosiEmployee = (basic + housing) * 0.1; // 10% employee
+    const gosiEmployee = (basic + housing) * 0.1;
     return s + basic + housing + trans - gosiEmployee;
   }, 0);
 
