@@ -1105,10 +1105,10 @@ async function renderPayroll() {
     <!-- Employees -->
     <div class="section-title">
       <span>👥 الموظفون</span>
-      ${canManageEmployees()?'<span class="section-more" onclick="openModal('employee-modal')">+ موظف جديد</span>':''}
+      ${canManageEmployees()?' <span class="section-more" onclick="openEmpModal()">+ موظف جديد</span>':''}
     </div>
     <div class="list-card" style="margin-bottom:14px">
-      ${employees.length === 0 ? `<div class="empty-state"><div class="empty-icon">👤</div><div>لا يوجد موظفون</div><div style="margin-top:12px"><button onclick="openModal('employee-modal')" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة موظف</button></div></div>`
+      ${employees.length === 0 ? `<div class="empty-state"><div class="empty-icon">👤</div><div>لا يوجد موظفون</div><div style="margin-top:12px"><button onclick="openEmpModal()" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة موظف</button></div></div>`
         : employees.map(e => {
           const basic = Number(e.basicSalary||0);
           const housing = Number(e.housingAllowance||0);
