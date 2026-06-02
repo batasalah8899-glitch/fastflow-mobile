@@ -896,7 +896,7 @@ async function exportData(type) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'nobo-' + type + '-' + new Date().toLocaleDateString('en').replace(/\//g,'-') + '.csv';
+  a.download = 'nobo-' + type + '-' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
   alert('✅ تم تصدير ' + filtered.length + ' سجل!');
@@ -916,7 +916,7 @@ async function exportAllData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'nobo-backup-' + new Date().toLocaleDateString('en').replace(/\//g,'-') + '.json';
+  a.download = 'nobo-backup-' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(url);
   alert('✅ تم تصدير كل البيانات!');
@@ -960,9 +960,10 @@ async function handleImport(input) {
           return obj;
         });
         
+        window._csvRows = rows;
         preview.innerHTML = '<div style="color:var(--blue);font-size:12px">📋 ' + rows.length + ' سطر جاهز للاستيراد</div>' +
           '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:var(--text3)">الأعمدة: ' + headers.join(' • ') + '</div>' +
-          '<button onclick="confirmCSVImport(' + JSON.stringify(rows).replace(/'/g,"\'") + ')" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;border-radius:8px;padding:10px 20px;color:#080c14;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;width:100%">✅ تأكيد الاستيراد</button>';
+          '<button onclick="confirmCSVImport(window._csvRows)" style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));border:none;border-radius:8px;padding:10px 20px;color:#080c14;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;width:100%">✅ تأكيد الاستيراد</button>';
         return;
       }
       
@@ -1105,29 +1106,10 @@ async function renderPayroll() {
     <!-- Employees -->
     <div class="section-title">
       <span>👥 الموظفون</span>
-      ${canManageEmployees()?' <span class="section-more" onclick="openEmpModal()">+ موظف جديد</span>':''}
+      ${canManageEmployees()?'<span class="section-more" onclick="openEmpModal()">موظف جديد</span>':''}
     </div>
     <div class="list-card" style="margin-bottom:14px">
-      ${employees.length === 0 ? `<div class="empty-state"><div class="empty-icon">👤</div><div>لا يوجد موظفون</div><div style="margin-top:12px"><button onclick="openEmpModal()" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة موظف</button></div></div>`
-        : employees.map(e => {
-          const basic = Number(e.basicSalary||0);
-          const housing = Number(e.housingAllowance||0);
-          const trans = Number(e.transportAllowance||0);
-          const gosiEmp = (basic + housing) * 0.1;
-          const gosiEmp2 = (basic + housing) * 0.1175;
-          const net = basic + housing + trans - gosiEmp;
-          return `<div class="list-item" onclick="viewEmployee('${e.id}')">
-            <div class="list-avatar" style="background:rgba(200,150,60,0.1);color:var(--primary);font-weight:700">${(e.nameAr||'?').charAt(0)}</div>
-            <div class="list-info">
-              <div class="list-name">${e.nameAr||e.name||'-'}</div>
-              <div class="list-sub">${e.position||'-'} • ${e.nationality||'-'}</div>
-            </div>
-            <div style="text-align:left">
-              <div style="font-size:12px;font-weight:700;color:var(--green)">${Math.round(net).toLocaleString()} ر.س</div>
-              <div style="font-size:10px;color:var(--text3)">صافي</div>
-            </div>
-          </div>`;
-        }).join('')}
+      ${buildEmployeeList(employees)}
     </div>
 
     <!-- Run Payroll -->
@@ -1274,17 +1256,11 @@ async function runPayroll() {
   };
 
   if (!db.objectStoreNames.contains('payroll_runs')) {
-    alert('✅ تم احتساب الرواتب!
-إجمالي: ' + Math.round(totalGross).toLocaleString() + ' ر.س
-صافي: ' + Math.round(totalNet).toLocaleString() + ' ر.س
-GOSI: ' + Math.round(totalGOSI).toLocaleString() + ' ر.س');
+    alert('\u2705 \xd8\xaa\xd9\x85 \xd8\xa7\xd8\xad\xd8\xaa\xd8\xb3\xd8\xa7\xd8\xa8 \xd8\xa7\xd9\x84\xd8\xb1\xd9\x88\xd8\xa7\xd8\xaa\xd8\xa8! \xd8\xa5\xd8\xac\xd9\x85\xd8\xa7\xd9\x84\xd9\x8a: ' + Math.round(totalGross).toLocaleString() + ' \xd8\xb1.\xd8\xb3 | \xd8\xb5\xd8\xa7\xd9\x81\xd9\x8a: ' + Math.round(totalNet).toLocaleString() + ' \xd8\xb1.\xd8\xb3 | GOSI: ' + Math.round(totalGOSI).toLocaleString() + ' \xd8\xb1.\xd8\xb3');
     return;
   }
   await dbPut('payroll_runs', run);
-  alert('✅ تم تشغيل الرواتب!
-إجمالي: ' + Math.round(totalGross).toLocaleString() + ' ر.س
-صافي: ' + Math.round(totalNet).toLocaleString() + ' ر.س
-GOSI: ' + Math.round(totalGOSI).toLocaleString() + ' ر.س');
+  alert('\u2705 \xd8\xaa\xd9\x85 \xd8\xaa\xd8\xb4\xd8\xba\xd9\x8a\xd9\x84 \xd8\xa7\xd9\x84\xd8\xb1\xd9\x88\xd8\xa7\xd8\xaa\xd8\xa8! | \xd8\xa5\xd8\xac\xd9\x85\xd8\xa7\xd9\x84\xd9\x8a: ' + Math.round(totalGross).toLocaleString() + ' \xd8\xb1.\xd8\xb3 | \xd8\xb5\xd8\xa7\xd9\x81\xd9\x8a: ' + Math.round(totalNet).toLocaleString() + ' \xd8\xb1.\xd8\xb3 | GOSI: ' + Math.round(totalGOSI).toLocaleString() + ' \xd8\xb1.\xd8\xb3');
   renderPayroll();
 }
 
@@ -1305,8 +1281,7 @@ async function exportWPS() {
   const csv = [
     ['اسم الموظف','رقم IBAN','صافي الراتب','شهر الصرف','العملة'],
     ...rows
-  ].map(r => r.map(v => '"'+String(v)+'"').join(',')).join('
-');
+  ].map(r => r.map(v => '"'+String(v)+'"').join(',')).join('\n');
 
   const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
@@ -1334,10 +1309,10 @@ async function renderVendors() {
     </div>
     <div class="section-title">
       <span>🤝 قائمة الموردين</span>
-      ${canManageVendors()?'<span class="section-more" onclick="openModal('vendor-modal')">+ مورد جديد</span>':''}
+      ${canManageVendors()?'<span class="section-more" onclick="openVendorModal()">+ مورد جديد</span>':''}
     </div>
     <div class="list-card">
-      ${vendors.length===0?`<div class="empty-state"><div class="empty-icon">🤝</div><div>لا يوجد موردون</div><div style="margin-top:12px"><button onclick="openModal('vendor-modal')" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة مورد</button></div></div>`
+      ${vendors.length===0?`<div class="empty-state"><div class="empty-icon">🤝</div><div>لا يوجد موردون</div><div style="margin-top:12px"><button onclick="openVendorModal()" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة مورد</button></div></div>`
         :vendors.map(v=>`<div class="list-item" onclick="viewVendor('${v.id}')">
           <div class="list-avatar" style="background:rgba(200,150,60,0.1);color:var(--primary);font-weight:700;font-size:16px">${(v.name||'?').charAt(0)}</div>
           <div class="list-info">
@@ -1430,10 +1405,10 @@ async function renderPurchases() {
     </div>
     <div class="section-title">
       <span>🛒 قائمة المشتريات</span>
-      ${canManagePurchases()?'<span class="section-more" onclick="openModal('purchase-modal')">+ أمر جديد</span>':''}
+      ${canManagePurchases()?'<span class="section-more" onclick="openPurchaseModal()">+ أمر جديد</span>':''}
     </div>
     <div class="list-card">
-      ${sorted.length===0?`<div class="empty-state"><div class="empty-icon">🛒</div><div>لا توجد أوامر شراء</div><div style="margin-top:12px"><button onclick="openModal('purchase-modal')" class="btn-primary" style="width:auto;padding:10px 20px">+ أمر شراء جديد</button></div></div>`
+      ${sorted.length===0?`<div class="empty-state"><div class="empty-icon">🛒</div><div>لا توجد أوامر شراء</div><div style="margin-top:12px"><button onclick="openPurchaseModal()" class="btn-primary" style="width:auto;padding:10px 20px">+ أمر شراء جديد</button></div></div>`
         :sorted.map(p=>{
           const vendor = vendors.find(v=>v.id===p.vendorId);
           return `<div class="list-item">
@@ -2156,8 +2131,31 @@ async function sendAIMessage() {
 }
 
 function openEmpModal() { openModal('employee-modal'); }
-function openVendorModal() { openModal('vendor-modal'); }
-function openPurchaseModal() { loadVendorsSelect(); openModal('purchase-modal'); }
+
+function buildEmployeeList(employees) {
+  if (!employees || employees.length === 0) {
+    return '<div class="empty-state"><div class="empty-icon">👤</div><div>لا يوجد موظفون</div><div style="margin-top:12px"><button onclick="openEmpModal()" class="btn-primary" style="width:auto;padding:10px 20px">+ إضافة موظف</button></div></div>';
+  }
+  return employees.map(function(e) {
+    var basic = Number(e.basicSalary||0);
+    var housing = Number(e.housingAllowance||0);
+    var trans = Number(e.transportAllowance||0);
+    var gosiEmp = (basic + housing) * 0.1;
+    var net = basic + housing + trans - gosiEmp;
+    return '<div class="list-item" onclick="viewEmployee(this.dataset.id)" data-id="' + e.id + '">' +
+      '<div class="list-avatar" style="background:rgba(200,150,60,0.1);color:var(--primary);font-weight:700">' + (e.nameAr||'?').charAt(0) + '</div>' +
+      '<div class="list-info">' +
+        '<div class="list-name">' + (e.nameAr||e.name||'-') + '</div>' +
+        '<div class="list-sub">' + (e.position||'-') + ' · ' + (e.nationality||'-') + '</div>' +
+      '</div>' +
+      '<div style="text-align:left">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--green)">' + Math.round(net).toLocaleString() + ' ر.س</div>' +
+        '<div style="font-size:10px;color:var(--text3)">صافي</div>' +
+      '</div></div>';
+  }).join('');
+}
+function openVendorModal() { openVendorModal(); }
+function openPurchaseModal() { loadVendorsSelect(); openPurchaseModal(); }
 
 // ════════════════════════════════════════
 // RBAC - Saudi Arabia Compliant Permissions
